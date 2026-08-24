@@ -31,10 +31,14 @@
 
 <br>
 
+<% if (member.status === 'Closed') { %>
+<p class="error-text">This member's account is closed. New sub-accounts cannot be created.</p>
+<% } else { %>
 <form method="GET" action="/app/member/<%= member.id %>/subaccounts/new">
 <% if (fail) { %><input type="hidden" name="fail" value="<%= fail %>"><% } %>
 <button type="submit">New Sub-Account</button>
 </form>
+<% } %>
 
 </body>
 </html>

@@ -115,6 +115,9 @@ app.post('/app/member', requireLogin, (req, res) => {
   if (!member) {
     return res.render('frame/detail', { member: null, permissionDenied: false, fail });
   }
+  if (member.status === 'Restricted') {
+    return res.render('frame/detail', { member: null, permissionDenied: true, fail });
+  }
   res.render('frame/detail', { member, permissionDenied: false, fail });
 });
 
@@ -126,6 +129,9 @@ app.get('/app/member/:id/subaccounts', requireLogin, (req, res) => {
 
   const member = data.findMemberById(req.params.id);
   if (!member) return renderServerError(res);
+  if (member.status === 'Restricted') {
+    return res.render('frame/detail', { member: null, permissionDenied: true, fail });
+  }
   res.render('frame/subaccounts', { member, fail });
 });
 
@@ -135,10 +141,14 @@ app.get('/app/member/:id/subaccounts/new', requireLogin, (req, res) => {
 
   const member = data.findMemberById(req.params.id);
   if (!member) return renderServerError(res);
+  if (member.status === 'Restricted') {
+    return res.render('frame/detail', { member: null, permissionDenied: true, fail });
+  }
   res.render('frame/subaccount-new', {
     member,
     fail,
     error: null,
+    blocked: member.status === 'Closed',
     values: { type: 'Savings', deposit: '' }
   });
 });
@@ -149,6 +159,20 @@ app.post('/app/member/:id/subaccounts/review', requireLogin, (req, res) => {
 
   const member = data.findMemberById(req.params.id);
   if (!member) return renderServerError(res);
+
+  if (member.status === 'Restricted') {
+    return res.render('frame/detail', { member: null, permissionDenied: true, fail });
+  }
+
+  if (member.status === 'Closed') {
+    return res.render('frame/subaccount-new', {
+      member,
+      fail: '',
+      error: null,
+      blocked: true,
+      values: { type: 'Savings', deposit: '' }
+    });
+  }
 
   const type = req.body.type || 'Savings';
   const depositRaw = req.body.deposit;
@@ -187,6 +211,20 @@ app.post('/app/member/:id/subaccounts/confirm', requireLogin, (req, res) => {
 
   const member = data.findMemberById(req.params.id);
   if (!member) return renderServerError(res);
+
+  if (member.status === 'Restricted') {
+    return res.render('frame/detail', { member: null, permissionDenied: true, fail });
+  }
+
+  if (member.status === 'Closed') {
+    return res.render('frame/subaccount-new', {
+      member,
+      fail: '',
+      error: null,
+      blocked: true,
+      values: { type: 'Savings', deposit: '' }
+    });
+  }
 
   const type = req.body.type || 'Savings';
   const deposit = Number(req.body.deposit) || 0;

@@ -77,6 +77,53 @@ const SEED_MEMBERS = [
     status: 'Closed',
     savingsBalance: 0.0,
     subAccounts: []
+  },
+  {
+    id: '1009',
+    firstName: 'Emily',
+    lastName: 'Smith',
+    branch: 'Westside Branch',
+    status: 'Active',
+    savingsBalance: 2740.85,
+    subAccounts: []
+  },
+  {
+    id: '1010',
+    firstName: 'Thomas',
+    lastName: 'Doe',
+    branch: 'Downtown Branch',
+    status: 'Active',
+    savingsBalance: 615.0,
+    subAccounts: []
+  },
+  {
+    id: '1011',
+    firstName: 'Patricia',
+    lastName: 'Johnson',
+    branch: 'Uptown Branch',
+    status: 'Restricted',
+    savingsBalance: 98.4,
+    subAccounts: []
+  },
+  {
+    id: '1012',
+    firstName: 'James',
+    lastName: 'Carter',
+    branch: 'Downtown Branch',
+    status: 'Active',
+    savingsBalance: 7460.33,
+    subAccounts: [
+      { id: 'SA-5', type: 'Savings', balance: 1500.0, openedOn: '2019-08-21' }
+    ]
+  },
+  {
+    id: '1013',
+    firstName: 'Karen',
+    lastName: 'Carter',
+    branch: 'Westside Branch',
+    status: 'Active',
+    savingsBalance: 3305.7,
+    subAccounts: []
   }
 ];
 
@@ -85,11 +132,11 @@ function cloneSeed() {
 }
 
 let members = cloneSeed();
-let nextSubAccountNum = 5;
+let nextSubAccountNum = 6;
 
 function resetData() {
   members = cloneSeed();
-  nextSubAccountNum = 5;
+  nextSubAccountNum = 6;
 }
 
 function getAllMembers() {

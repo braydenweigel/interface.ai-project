@@ -8,6 +8,11 @@
 
 <h3>New Sub-Account for <%= member.firstName %> <%= member.lastName %> (<%= member.id %>)</h3>
 
+<% if (typeof blocked !== 'undefined' && blocked) { %>
+<p class="error-text">This member's account is closed. New sub-accounts cannot be created.</p>
+
+<% } else { %>
+
 <% if (typeof error !== 'undefined' && error) { %>
 <p class="error-text"><%= error %></p>
 <% } %>
@@ -38,6 +43,8 @@
 </tr>
 </table>
 </form>
+
+<% } %>
 
 <p><a href="/app/member/<%= member.id %>/subaccounts">Back to Sub-Accounts</a></p>
 
