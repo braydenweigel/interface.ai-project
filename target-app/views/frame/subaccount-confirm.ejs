@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sub-Account Created</title>
+<link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+
+<h3>Sub-Account Created</h3>
+
+<p>A new sub-account has been created for <%= member.firstName %> <%= member.lastName %> (<%= member.id %>).</p>
+
+<table class="bordered">
+<tr><td><b>Account ID</b></td><td><%= subAccount.id %></td></tr>
+<tr><td><b>Account Type</b></td><td><%= subAccount.type %></td></tr>
+<tr><td><b>Balance</b></td><td>$<%= subAccount.balance.toFixed(2) %></td></tr>
+<tr><td><b>Opened</b></td><td><%= subAccount.openedOn %></td></tr>
+</table>
+
+<br>
+
+<form method="GET" action="/app/member/<%= member.id %>/subaccounts">
+<button type="submit">View Sub-Accounts</button>
+</form>
+
+</body>
+</html>

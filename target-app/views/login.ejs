@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>First Community Bank - Associate Login</title>
+<link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+<table width="100%" class="bordered">
+<tr><td style="background-color:#003366;color:#ffffff;padding:6px;">
+<b>First Community Bank &mdash; Back Office Portal</b>
+</td></tr>
+</table>
+
+<br>
+
+<table align="center" class="bordered" cellpadding="0" cellspacing="0">
+<tr><td>
+<div class="panel" style="width:280px;">
+<h2>Associate Login</h2>
+
+<% if (typeof error !== 'undefined' && error) { %>
+<p class="error-text"><%= error %></p>
+<% } %>
+
+<form method="POST" action="/login">
+<table cellpadding="4">
+<tr>
+<td>Username:</td>
+<td><input type="text" name="u"></td>
+</tr>
+<tr>
+<td>Password:</td>
+<td><input type="password" name="p"></td>
+</tr>
+<tr>
+<td colspan="2" align="right"><input type="submit" value="Log In"></td>
+</tr>
+</table>
+</form>
+
+<p style="font-size:11px;color:#555;">Any username/password will be accepted. This is a mock system for testing purposes only.</p>
+</div>
+</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "mock-legacy-bank-app",
+  "version": "1.0.0",
+  "description": "Deliberately legacy server-rendered mock bank back-office app for computer-use agent testing",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0"
+  }
+}

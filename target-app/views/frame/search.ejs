@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Member Search</title>
+<link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+
+<h2>Member Search</h2>
+
+<form method="GET" action="/app/search">
+<table cellpadding="4">
+<tr>
+<td>Member ID or Last Name:</td>
+<td><input type="text" name="q" value="<%= q %>"></td>
+<td><input type="submit" value="Search"></td>
+</tr>
+</table>
+</form>
+
+<% if (results !== null) { %>
+<br>
+<table class="bordered frame">
+<tr>
+<th>Member ID</th>
+<th>Name</th>
+<th>Branch</th>
+<th>Status</th>
+</tr>
+<% if (results.length === 0) { %>
+<tr>
+<td colspan="4">No records found.</td>
+</tr>
+<% } else { %>
+<% results.forEach(function(m) { %>
+<tr>
+<td>
+<form method="POST" action="/app/member" style="margin:0;display:inline;">
+<input type="hidden" name="id" value="<%= m.id %>">
+<% if (fail) { %><input type="hidden" name="fail" value="<%= fail %>"><% } %>
+<button type="submit"><%= m.id %></button>
+</form>
+</td>
+<td><%= m.firstName %> <%= m.lastName %></td>
+<td><%= m.branch %></td>
+<td><%= m.status %></td>
+</tr>
+<% }); %>
+<% } %>
+</table>
+<% } %>
+
+</body>
+</html>

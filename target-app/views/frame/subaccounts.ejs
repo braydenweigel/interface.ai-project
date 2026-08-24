@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sub-Accounts</title>
+<link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+
+<h3>Sub-Accounts for <%= member.firstName %> <%= member.lastName %> (<%= member.id %>)</h3>
+
+<table class="bordered frame">
+<tr>
+<th>Account ID</th>
+<th>Type</th>
+<th>Balance</th>
+<th>Opened</th>
+</tr>
+<% if (member.subAccounts.length === 0) { %>
+<tr><td colspan="4">No sub-accounts on file.</td></tr>
+<% } else { %>
+<% member.subAccounts.forEach(function(sa) { %>
+<tr>
+<td><%= sa.id %></td>
+<td><%= sa.type %></td>
+<td>$<%= sa.balance.toFixed(2) %></td>
+<td><%= sa.openedOn %></td>
+</tr>
+<% }); %>
+<% } %>
+</table>
+
+<br>
+
+<form method="GET" action="/app/member/<%= member.id %>/subaccounts/new">
+<% if (fail) { %><input type="hidden" name="fail" value="<%= fail %>"><% } %>
+<button type="submit">New Sub-Account</button>
+</form>
+
+</body>
+</html>

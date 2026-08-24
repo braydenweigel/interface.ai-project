@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Member Detail</title>
+<link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+
+<h2>Member Detail</h2>
+
+<% if (permissionDenied) { %>
+<p class="error-text">You do not have permission to view this member.</p>
+
+<% } else if (!member) { %>
+<p>No records found.</p>
+
+<% } else { %>
+
+<table class="bordered">
+<tr><td><b>Name</b></td><td><%= member.firstName %> <%= member.lastName %></td></tr>
+<tr><td><b>Branch</b></td><td><%= member.branch %></td></tr>
+<tr><td><b>Status</b></td><td><%= member.status %></td></tr>
+<tr><td><b>Savings Balance</b></td><td>$<%= member.savingsBalance.toFixed(2) %></td></tr>
+</table>
+
+<br>
+
+<div>
+<h3>Sub-Accounts</h3>
+<iframe src="/app/member/<%= member.id %>/subaccounts<%= fail ? '?fail=' + encodeURIComponent(fail) : '' %>" height="350" scrolling="auto"></iframe>
+</div>
+
+<% } %>
+
+</body>
+</html>

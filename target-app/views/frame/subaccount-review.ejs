@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Review New Sub-Account</title>
+<link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+
+<h3>Review New Sub-Account for <%= member.firstName %> <%= member.lastName %> (<%= member.id %>)</h3>
+
+<p>Please review the details below. This action creates a real account record and cannot be easily undone.</p>
+
+<table class="bordered">
+<tr><td><b>Account Type</b></td><td><%= type %></td></tr>
+<tr><td><b>Initial Deposit</b></td><td>$<%= Number(deposit).toFixed(2) %></td></tr>
+</table>
+
+<br>
+
+<form method="POST" action="/app/member/<%= member.id %>/subaccounts/confirm">
+<input type="hidden" name="type" value="<%= type %>">
+<input type="hidden" name="deposit" value="<%= deposit %>">
+<input type="submit" value="Confirm Creation">
+</form>
+
+<p><a href="/app/member/<%= member.id %>/subaccounts/new">Back / Edit</a></p>
+
+<% if (fail === 'unexpected_dialog') { %>
+<script>
+document.querySelector('form').addEventListener('submit', function (e) {
+  var proceed = window.confirm('Are you sure you want to create this sub-account? This cannot be undone.');
+  if (!proceed) {
+    e.preventDefault();
+  }
+});
+</script>
+<% } %>
+
+</body>
+</html>
