@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "capabilityId": "bank.member.savings-lookup.broken-rationale",
+  "version": 1,
+  "description": "Broken fixture: a locator strategy is present but robustnessRationale is empty.",
+  "target": { "appId": "mock-legacy-bank-app", "baseUrl": "http://localhost:4000", "entryPath": "/login" },
+  "parameters": [
+    { "name": "memberId", "type": "string", "required": true, "description": "Member ID.", "sensitive": false }
+  ],
+  "outputs": [
+    { "name": "savingsBalance", "type": "currency", "description": "Balance.", "sensitive": false }
+  ],
+  "steps": [
+    {
+      "id": "extract_savings_balance",
+      "action": "extract",
+      "description": "Read the Savings Balance value cell.",
+      "locator": {
+        "strategies": [{ "kind": "text", "text": "Savings Balance" }],
+        "robustnessRationale": ""
+      },
+      "outputName": "savingsBalance",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    }
+  ],
+  "checkpoint": {
+    "description": "Savings Balance is visible.",
+    "locator": { "strategies": [{ "kind": "text", "text": "Savings Balance" }], "robustnessRationale": "Real, stable label text on the detail page." },
+    "expectation": { "kind": "visible" }
+  },
+  "businessOutcomes": [],
+  "riskClass": "safe",
+  "provenance": { "createdAt": "2026-08-23T00:00:00.000Z", "createdBy": "hand-authored:braydenweigel7@gmail.com" }
+}

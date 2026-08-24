@@ -1,0 +1,22 @@
+{
+  "name": "capability-artifact-system",
+  "version": "0.1.0",
+  "description": "Capability-artifact schema + deterministic replay harness (ARTIFACT_BUILD_SPEC.md)",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "validate": "tsx src/replay/validate-only.ts",
+    "replay": "tsx src/replay/run.ts",
+    "test": "tsx --test src/test/*.test.ts",
+    "clear-evidence": "node scripts/clear-evidence.js"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}
