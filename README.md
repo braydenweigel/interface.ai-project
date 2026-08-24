@@ -20,8 +20,8 @@ the search→detail flow was chosen and why no mock-app changes were needed.
   fallback-chain resolution, recovery hints, business-outcome-before-
   checkpoint ordering, sensitive-field redaction).
 - `src/replay/run.ts` / `src/replay/validate-only.ts` — CLIs.
-- `artifacts/member-savings-lookup.json` — the hand-authored test artifact.
-- `artifacts/broken/` — deliberately-invalid fixtures used to prove the
+- `artifacts/test/member-savings-lookup.json` — the hand-authored test artifact.
+- `artifacts/test/broken/` — deliberately-invalid fixtures used to prove the
   validator's cross-field checks.
 - `evidence/` — structured results + logs (+ screenshots on failure) from
   real replay runs, including one of each required outcome.
@@ -47,25 +47,25 @@ With `target-app` running on port 4000:
 
 ```bash
 # 1. Validate the hand-authored artifact (no browser involved)
-npx tsx src/replay/validate-only.ts artifacts/member-savings-lookup.json
+npx tsx src/replay/validate-only.ts artifacts/test/member-savings-lookup.json
 
 # 2. Replay it: happy path
-npx tsx src/replay/run.ts artifacts/member-savings-lookup.json \
+npx tsx src/replay/run.ts artifacts/test/member-savings-lookup.json \
   memberId=1001 username=demo.operator password=demo123
 # -> {"status":"success","outputs":{"savingsBalance":5230.5}}
 
 # 3. Replay it: business-outcome path (nonexistent member, not a crash)
-npx tsx src/replay/run.ts artifacts/member-savings-lookup.json \
+npx tsx src/replay/run.ts artifacts/test/member-savings-lookup.json \
   memberId=99999 username=demo.operator password=demo123
 # -> {"status":"business_outcome","outcome":"member_not_found",...}
 
 # 4. Replay it: recoverable path (real 2-4s server delay, deterministic retry)
-npx tsx src/replay/run.ts artifacts/member-savings-lookup.json \
+npx tsx src/replay/run.ts artifacts/test/member-savings-lookup.json \
   memberId=1002 username=demo.operator password=demo123 slow=true
 # -> {"status":"success",...} — see the evidence log for the recovery attempt
 
 # 5. Hard failure (stop target-app first, or use the broken-locator demo fixture)
-npx tsx src/replay/run.ts artifacts/member-savings-lookup.demo-broken-locator.json \
+npx tsx src/replay/run.ts artifacts/test/member-savings-lookup.demo-broken-locator.json \
   memberId=1001 username=demo.operator password=demo123
 # -> {"status":"failure","stepId":"extract_savings_balance",...}
 ```
@@ -84,9 +84,9 @@ npm test
 ## Validating a broken artifact
 
 ```bash
-npx tsx src/replay/validate-only.ts artifacts/broken/missing-rationale.json
-npx tsx src/replay/validate-only.ts artifacts/broken/dangling-param-reference.json
-npx tsx src/replay/validate-only.ts artifacts/broken/recoverable-without-hint.json
+npx tsx src/replay/validate-only.ts artifacts/test/broken/missing-rationale.json
+npx tsx src/replay/validate-only.ts artifacts/test/broken/dangling-param-reference.json
+npx tsx src/replay/validate-only.ts artifacts/test/broken/recoverable-without-hint.json
 ```
 
 Each fails with a specific, per-field message rather than a generic parse
