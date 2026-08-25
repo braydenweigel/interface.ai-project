@@ -5,6 +5,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { validateArtifact } from '../types/artifact-schema.zod';
@@ -13,6 +14,17 @@ import { replay } from '../replay/engine';
 const ROOT = path.resolve(__dirname, '..', '..');
 const TARGET_APP_DIR = path.join(ROOT, 'target-app');
 const BASE_URL = 'http://localhost:4000';
+
+function freshEvidenceDir(label: string): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), `evidence-test-${label}-`));
+}
+
+/** Every run must produce both files, regardless of outcome. */
+function assertRunEvidence(evidenceDir: string, screenshotPath: string | undefined): void {
+  assert.equal(screenshotPath, path.join(evidenceDir, 'screenshot.png'));
+  assert.ok(fs.existsSync(screenshotPath!), `expected screenshot at ${screenshotPath}`);
+  assert.ok(fs.statSync(screenshotPath!).size > 0, 'screenshot.png should not be empty');
+}
 
 let serverProcess: ChildProcess | undefined;
 
@@ -45,38 +57,56 @@ after(async () => {
 });
 
 function loadValidArtifact(relPath: string) {
-  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'artifacts', relPath), 'utf-8'));
+  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'artifacts', 'test', relPath), 'utf-8'));
   const result = validateArtifact(raw);
   assert.equal(result.valid, true, JSON.stringify(result.issues));
   return result.artifact!;
 }
 
-test('happy path: valid params extract the correct savings balance', async () => {
+test('happy path: valid params extract the correct savings balance, with evidence written', async () => {
   const artifact = loadValidArtifact('member-savings-lookup.json');
-  const { result } = await replay(artifact, { memberId: '1001', username: 'demo.operator', password: 'demo123' });
+  const evidenceDir = freshEvidenceDir('success');
+  const { result, screenshotPath } = await replay(
+    artifact,
+    { memberId: '1001', username: 'demo.operator', password: 'demo123' },
+    { evidenceDir }
+  );
   assert.equal(result.status, 'success');
   if (result.status === 'success') {
     assert.equal(result.outputs.savingsBalance, 5230.5);
   }
+  assertRunEvidence(evidenceDir, screenshotPath);
 });
 
-test('business outcome: a nonexistent member id is reported as business_outcome, not failure', async () => {
+test('business outcome: a nonexistent member id is reported as business_outcome, not failure, with evidence written', async () => {
   const artifact = loadValidArtifact('member-savings-lookup.json');
-  const { result } = await replay(artifact, { memberId: '99999', username: 'demo.operator', password: 'demo123' });
+  const evidenceDir = freshEvidenceDir('business-outcome');
+  const { result, screenshotPath } = await replay(
+    artifact,
+    { memberId: '99999', username: 'demo.operator', password: 'demo123' },
+    { evidenceDir }
+  );
   assert.equal(result.status, 'business_outcome');
   if (result.status === 'business_outcome') {
     assert.equal(result.outcome, 'member_not_found');
   }
+  assertRunEvidence(evidenceDir, screenshotPath);
 });
 
-test('hard failure: a locator pointed at a nonexistent element reports a specific stepId', async () => {
+test('hard failure: a locator pointed at a nonexistent element reports a specific stepId, with evidence written', async () => {
   const artifact = loadValidArtifact('member-savings-lookup.demo-broken-locator.json');
-  const { result } = await replay(artifact, { memberId: '1001', username: 'demo.operator', password: 'demo123' });
+  const evidenceDir = freshEvidenceDir('failure');
+  const { result, screenshotPath } = await replay(
+    artifact,
+    { memberId: '1001', username: 'demo.operator', password: 'demo123' },
+    { evidenceDir }
+  );
   assert.equal(result.status, 'failure');
   if (result.status === 'failure') {
     assert.equal(result.stepId, 'extract_savings_balance');
     assert.ok(result.observed.length > 0);
   }
+  assertRunEvidence(evidenceDir, screenshotPath);
 });
 
 test('sensitive outputs and params never leak into the returned result', async () => {

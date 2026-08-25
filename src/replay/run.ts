@@ -1,8 +1,9 @@
 // CLI: run <artifact.json> key=value ... (ARTIFACT_BUILD_SPEC.md §5).
 //
 // Validates the artifact, replays it against a live browser with the
-// given params, prints the structured result, and writes the result
-// (plus log, plus a screenshot on failure) to /evidence.
+// given params, prints the structured result, and writes evidence to its
+// own folder under /evidence/<runId>/ — result.json (result + log) and
+// screenshot.png, both written for every run regardless of outcome.
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -74,17 +75,18 @@ async function main(): Promise<void> {
   }
 
   const runId = `${artifact.capabilityId.replace(/[^a-zA-Z0-9._-]/g, '_')}.${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  const runDir = path.join(EVIDENCE_DIR, runId);
+  fs.mkdirSync(runDir, { recursive: true });
+
   const headless = process.env.HEADFUL !== '1';
 
   const { result, log, screenshotPath } = await replay(artifact, params, {
     headless,
-    evidenceDir: EVIDENCE_DIR,
-    runId
+    evidenceDir: runDir
   });
 
   console.log(JSON.stringify(result, null, 2));
 
-  fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
   const evidenceRecord = {
     runId,
     artifactPath,
@@ -95,9 +97,9 @@ async function main(): Promise<void> {
     log,
     screenshotPath
   };
-  const evidencePath = path.join(EVIDENCE_DIR, `${runId}.json`);
-  fs.writeFileSync(evidencePath, JSON.stringify(evidenceRecord, null, 2), 'utf-8');
-  console.error(`evidence written to ${evidencePath}`);
+  const resultPath = path.join(runDir, 'result.json');
+  fs.writeFileSync(resultPath, JSON.stringify(evidenceRecord, null, 2), 'utf-8');
+  console.error(`evidence written to ${runDir}`);
 
   process.exit(result.status === 'failure' ? 2 : 0);
 }

@@ -23,8 +23,10 @@ the search→detail flow was chosen and why no mock-app changes were needed.
 - `artifacts/test/member-savings-lookup.json` — the hand-authored test artifact.
 - `artifacts/test/broken/` — deliberately-invalid fixtures used to prove the
   validator's cross-field checks.
-- `evidence/` — structured results + logs (+ screenshots on failure) from
-  real replay runs, including one of each required outcome.
+- `evidence/` — one folder per replay run (`evidence/<runId>/`), each
+  containing `result.json` (result + step log) and `screenshot.png` —
+  both written for every run regardless of outcome — including one run
+  of each required outcome.
 
 ## Setup
 
@@ -70,9 +72,10 @@ npx tsx src/replay/run.ts artifacts/test/member-savings-lookup.demo-broken-locat
 # -> {"status":"failure","stepId":"extract_savings_balance",...}
 ```
 
-Every run writes a structured result + step log (+ a screenshot on failure)
-to `evidence/`, redacting anything the artifact marks `sensitive` (here:
-`username`/`password`).
+Every run writes its own `evidence/<runId>/` folder containing `result.json`
+(structured result + step log) and `screenshot.png` — both always written,
+whatever the outcome — redacting anything the artifact marks `sensitive`
+(here: `username`/`password`).
 
 Run the automated test suite (schema validation + live-browser replay against
 a locally spawned `target-app`):

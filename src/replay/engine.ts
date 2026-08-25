@@ -43,9 +43,8 @@ export interface ReplayRunResult {
 
 export interface ReplayOptions {
   headless?: boolean;
+  /** Per-run evidence folder. If set, screenshot.png is written directly into it. */
   evidenceDir?: string;
-  /** Run identifier used to namespace evidence filenames. */
-  runId?: string;
 }
 
 const REDACTED = '[REDACTED]';
@@ -466,27 +465,31 @@ function describeExpectedForStep(step: ArtifactStep, ctx: TemplateContext): stri
 // -----------------------------------------------------------------------
 
 export async function replay(artifact: CapabilityArtifact, rawParams: ReplayParams, opts: ReplayOptions = {}): Promise<ReplayRunResult> {
-  const runId = opts.runId ?? new Date().toISOString().replace(/[:.]/g, '-');
   const log: ReplayLogEntry[] = [];
   const outputs: Record<string, unknown> = {};
-
-  let ctx: TemplateContext;
-  try {
-    ctx = new TemplateContext(artifact, rawParams);
-  } catch (err) {
-    return {
-      result: { status: 'failure', stepId: '(params)', expected: 'all required parameters provided', observed: (err as Error).message },
-      log
-    };
-  }
+  let result: ReplayResult;
 
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
   let page: Page | undefined;
+
+  async function finalize(): Promise<ReplayRunResult> {
+    const screenshotPath = page ? await saveScreenshot(page, opts.evidenceDir) : undefined;
+    return { result, log, screenshotPath };
+  }
+
   try {
     browser = await chromium.launch({ headless: opts.headless ?? true });
     context = await browser.newContext();
     page = await context.newPage();
+
+    let ctx: TemplateContext;
+    try {
+      ctx = new TemplateContext(artifact, rawParams);
+    } catch (err) {
+      result = { status: 'failure', stepId: '(params)', expected: 'all required parameters provided', observed: (err as Error).message };
+      return await finalize();
+    }
 
     for (const step of artifact.steps) {
       try {
@@ -494,38 +497,33 @@ export async function replay(artifact: CapabilityArtifact, rawParams: ReplayPara
       } catch (err) {
         const bo = await detectBusinessOutcome(page, artifact, ctx, log);
         if (bo) {
-          return { result: { status: 'business_outcome', outcome: bo.name, outputs: bo.outputs }, log };
+          result = { status: 'business_outcome', outcome: bo.name, outputs: bo.outputs };
+          return await finalize();
         }
-        const screenshotPath = await saveScreenshot(page, opts.evidenceDir, runId, step.id);
-        return {
-          result: {
-            status: 'failure',
-            stepId: step.id,
-            expected: describeExpectedForStep(step, ctx),
-            observed: (err as Error).message
-          },
-          log,
-          screenshotPath
+        result = {
+          status: 'failure',
+          stepId: step.id,
+          expected: describeExpectedForStep(step, ctx),
+          observed: (err as Error).message
         };
+        return await finalize();
       }
     }
 
     const bo = await detectBusinessOutcome(page, artifact, ctx, log);
     if (bo) {
-      return { result: { status: 'business_outcome', outcome: bo.name, outputs: bo.outputs }, log };
+      result = { status: 'business_outcome', outcome: bo.name, outputs: bo.outputs };
+      return await finalize();
     }
 
     const cp = await checkCheckpoint(page, artifact, ctx);
     if (!cp.ok) {
-      const screenshotPath = await saveScreenshot(page, opts.evidenceDir, runId, 'checkpoint');
-      return {
-        result: { status: 'failure', stepId: '(checkpoint)', expected: cp.expected, observed: cp.observed },
-        log,
-        screenshotPath
-      };
+      result = { status: 'failure', stepId: '(checkpoint)', expected: cp.expected, observed: cp.observed };
+      return await finalize();
     }
 
-    return { result: { status: 'success', outputs: redactOutputs(outputs, artifact.outputs) }, log };
+    result = { status: 'success', outputs: redactOutputs(outputs, artifact.outputs) };
+    return await finalize();
   } finally {
     await page?.close().catch(() => {});
     await context?.close().catch(() => {});
@@ -533,11 +531,12 @@ export async function replay(artifact: CapabilityArtifact, rawParams: ReplayPara
   }
 }
 
-async function saveScreenshot(page: Page, evidenceDir: string | undefined, runId: string, label: string): Promise<string | undefined> {
+/** Writes screenshot.png directly into `evidenceDir`, which the caller scopes per-run. */
+async function saveScreenshot(page: Page, evidenceDir: string | undefined): Promise<string | undefined> {
   if (!evidenceDir) return undefined;
   try {
     fs.mkdirSync(evidenceDir, { recursive: true });
-    const filePath = path.join(evidenceDir, `${runId}.${label}.png`);
+    const filePath = path.join(evidenceDir, 'screenshot.png');
     await page.screenshot({ path: filePath });
     return filePath;
   } catch {

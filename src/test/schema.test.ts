@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { validateArtifact } from '../types/artifact-schema.zod';
 
-const ARTIFACTS_DIR = path.resolve(__dirname, '..', '..', 'artifacts');
+const ARTIFACTS_DIR = path.resolve(__dirname, '..', '..', 'artifacts', 'test');
 
 function load(relPath: string): unknown {
   return JSON.parse(fs.readFileSync(path.join(ARTIFACTS_DIR, relPath), 'utf-8'));
