@@ -8,17 +8,34 @@
 //
 // CLI usage:            tsx src/replay/run.ts <artifact.json> key=value ...
 // Programmatic usage:   import { run } from './run';
-//                        await run('artifacts/test/member-savings-lookup.json', {
+//                        const outcome = await run('artifacts/test/member-savings-lookup.json', {
 //                          memberId: '1001',
 //                          username: 'demo.operator',
 //                          password: 'demo123'
 //                        });
+//                        // outcome: { exitCode, result, log, screenshotPath, runId, runDir }
+//                        // outcome.result is the same discriminated union engine.replay() returns:
+//                        // {status:"success", outputs} | {status:"business_outcome", outcome, outputs}
+//                        // | {status:"failure", stepId, expected, observed}
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { validateArtifact } from '../types/artifact-schema.zod';
-import { replay, type ReplayParams } from './engine';
+import { replay, type ReplayParams, type ReplayResult, type ReplayLogEntry } from './engine';
 import type { ParamSpec } from '../types/capability-artifact';
+
+/** Everything a caller of run() gets back: the replay outcome itself, plus
+ * the exit code and evidence-location bookkeeping that the CLI needs. */
+export interface RunOutcome {
+  /** 0 on success/business_outcome, 1 on a pre-flight error (bad path, failed schema validation), 2 on a replay failure. */
+  exitCode: number;
+  result: ReplayResult;
+  log: ReplayLogEntry[];
+  screenshotPath?: string;
+  /** Absent when the run never got past artifact loading/validation. */
+  runId?: string;
+  runDir?: string;
+}
 
 const EVIDENCE_DIR = path.resolve(__dirname, '..', '..', 'evidence');
 
@@ -38,17 +55,23 @@ function coerceParamValue(raw: string | number | boolean, spec: ParamSpec | unde
 
 /**
  * Validates the artifact at `artifactPath` and replays it with `params`,
- * returning the process exit code rather than exiting itself — so this is
- * callable directly (from tests, from another script, from repl.ts) without
- * killing the caller's process.
+ * returning the full outcome (result, log, exit code, evidence paths)
+ * rather than exiting the process — so this is callable directly (from
+ * tests, from another script, from repl.ts) and the caller gets back
+ * exactly what happened, not just a pass/fail number.
  */
-export async function run(artifactPath: string, params: Record<string, string | number | boolean> = {}): Promise<number> {
+export async function run(artifactPath: string, params: Record<string, string | number | boolean> = {}): Promise<RunOutcome> {
   let raw: unknown;
   try {
     raw = JSON.parse(fs.readFileSync(artifactPath, 'utf-8'));
   } catch (err) {
-    console.error(`could not read/parse ${artifactPath}: ${(err as Error).message}`);
-    return 1;
+    const message = `could not read/parse ${artifactPath}: ${(err as Error).message}`;
+    console.error(message);
+    return {
+      exitCode: 1,
+      result: { status: 'failure', stepId: '(artifact)', expected: 'a readable, valid JSON artifact file', observed: message },
+      log: []
+    };
   }
 
   const validation = validateArtifact(raw);
@@ -57,7 +80,12 @@ export async function run(artifactPath: string, params: Record<string, string | 
     for (const issue of validation.issues) {
       console.error(`  [${issue.path}] ${issue.message}`);
     }
-    return 1;
+    const observed = validation.issues.map((i) => `[${i.path}] ${i.message}`).join('; ');
+    return {
+      exitCode: 1,
+      result: { status: 'failure', stepId: '(schema)', expected: 'artifact valid against artifact-schema.zod.ts', observed },
+      log: []
+    };
   }
   const artifact = validation.artifact!;
 
@@ -94,7 +122,14 @@ export async function run(artifactPath: string, params: Record<string, string | 
   fs.writeFileSync(resultPath, JSON.stringify(evidenceRecord, null, 2), 'utf-8');
   console.error(`evidence written to ${runDir}`);
 
-  return result.status === 'failure' ? 2 : 0;
+  return {
+    exitCode: result.status === 'failure' ? 2 : 0,
+    result,
+    log,
+    screenshotPath,
+    runId,
+    runDir
+  };
 }
 
 function redactParamsForEvidence(params: ReplayParams, specs: ParamSpec[]): Record<string, unknown> {
@@ -131,7 +166,8 @@ async function cli(argv: string[]): Promise<number> {
     console.error((err as Error).message);
     return 1;
   }
-  return run(parsed.artifactPath, parsed.params);
+  const outcome = await run(parsed.artifactPath, parsed.params);
+  return outcome.exitCode;
 }
 
 if (require.main === module) {

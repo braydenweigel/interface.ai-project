@@ -1,8 +1,9 @@
 // Interactive loop for repeatedly calling run(artifactPath, params) from
 // run.ts within a single process. Exists to exercise (and make useful) the
-// fact that run() returns an exit code instead of calling process.exit()
-// -- so it can be called over and over without tearing the process down
-// between runs, unlike the one-shot `tsx src/replay/run.ts ...` CLI.
+// fact that run() returns its outcome (result, log, exit code, evidence
+// paths) instead of calling process.exit() -- so it can be called over and
+// over without tearing the process down between runs, unlike the one-shot
+// `tsx src/replay/run.ts ...` CLI.
 //
 // Usage: tsx src/replay/repl.ts
 // Each line is parsed into (artifactPath, params) and passed straight to
@@ -56,8 +57,8 @@ async function repl(): Promise<void> {
 
     try {
       const { artifactPath, params } = parseLine(line);
-      const code = await run(artifactPath, params);
-      console.log(`(exit code: ${code})\n`);
+      const outcome = await run(artifactPath, params);
+      console.log(`(exit code: ${outcome.exitCode})\n`);
     } catch (err) {
       console.error('unexpected error:', err, '\n');
     }
@@ -68,7 +69,16 @@ async function repl(): Promise<void> {
   console.log('bye');
 }
 
-repl();
+async function testrun(): Promise<void> {
+  const outcome = await run('artifacts/test/member-savings-lookup.json', { memberId: '1002', username: 'demo.operator', password: 'demo123' });
+  if (outcome.result.status === 'success') {
+    console.log(outcome.result.outputs.savingsBalance); // 5230.5
+  }
+ 
+}
+
+//repl();
+testrun();
 
 
 

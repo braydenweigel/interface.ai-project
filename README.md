@@ -79,18 +79,26 @@ whatever the outcome — redacting anything the artifact marks `sensitive`
 
 `run()` in `run.ts` is also directly callable from TypeScript — it takes
 the artifact path and a plain params object (not an argv array), coerces
-each value against the artifact's declared parameter types, and returns an
-exit code instead of calling `process.exit()`, so it's safe to call
-repeatedly in one process:
+each value against the artifact's declared parameter types, and returns the
+full outcome (not just an exit code, and not `process.exit()`), so it's
+safe to call repeatedly in one process and the caller gets the actual
+result back:
 
 ```ts
 import { run } from './src/replay/run';
 
-await run('artifacts/test/member-savings-lookup.json', {
+const outcome = await run('artifacts/test/member-savings-lookup.json', {
   memberId: '1001',
   username: 'demo.operator',
   password: 'demo123'
 });
+
+outcome.exitCode;        // 0 success/business_outcome, 1 pre-flight error, 2 replay failure
+outcome.result;          // {status:"success", outputs} | {status:"business_outcome", outcome, outputs}
+                          // | {status:"failure", stepId, expected, observed}
+outcome.log;              // step-by-step log entries
+outcome.screenshotPath;   // evidence/<runId>/screenshot.png
+outcome.runId;            // e.g. bank.member.savings-lookup.2026-...
 ```
 
 For interactive/ad-hoc use from the terminal, `repl.ts` wraps this in a
