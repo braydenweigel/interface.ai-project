@@ -1,0 +1,68 @@
+{
+  "runId": "bank.member.savings-lookup.2026-08-25T05-30-17-053Z",
+  "artifactPath": "artifacts/test/member-savings-lookup.json",
+  "capabilityId": "bank.member.savings-lookup",
+  "capabilityVersion": 1,
+  "params": {
+    "memberId": "1001",
+    "username": "[REDACTED]",
+    "password": "[REDACTED]"
+  },
+  "result": {
+    "status": "success",
+    "outputs": {
+      "savingsBalance": 5230.5
+    }
+  },
+  "log": [
+    {
+      "time": "2026-08-25T05:30:17.173Z",
+      "stepId": "navigate_login",
+      "action": "navigate",
+      "message": "navigated to http://localhost:4000/login?slow=false"
+    },
+    {
+      "time": "2026-08-25T05:30:17.194Z",
+      "stepId": "fill_username",
+      "action": "fill",
+      "message": "filled via [xpath=//td[normalize-space(text())='Username:']/following-sibling::td[1]/input] with [REDACTED]"
+    },
+    {
+      "time": "2026-08-25T05:30:17.200Z",
+      "stepId": "fill_password",
+      "action": "fill",
+      "message": "filled via [xpath=//td[normalize-space(text())='Password:']/following-sibling::td[1]/input] with [REDACTED]"
+    },
+    {
+      "time": "2026-08-25T05:30:17.263Z",
+      "stepId": "click_login_submit",
+      "action": "click",
+      "message": "clicked via [role=button name=\"Log In\"]"
+    },
+    {
+      "time": "2026-08-25T05:30:17.290Z",
+      "stepId": "fill_search_query",
+      "action": "fill",
+      "message": "filled via [xpath=//td[normalize-space(text())='Member ID or Last Name:']/following-sibling::td[1]/input] with 1001"
+    },
+    {
+      "time": "2026-08-25T05:30:17.329Z",
+      "stepId": "click_search_submit",
+      "action": "click",
+      "message": "clicked via [role=button name=\"Search\"]"
+    },
+    {
+      "time": "2026-08-25T05:30:17.388Z",
+      "stepId": "click_member_row",
+      "action": "click",
+      "message": "clicked via [xpath=//tr[td[1][normalize-space(.)='1001']]//button]"
+    },
+    {
+      "time": "2026-08-25T05:30:17.421Z",
+      "stepId": "extract_savings_balance",
+      "action": "extract",
+      "message": "extracted \"savingsBalance\" = 5230.5 via [xpath=//tr[td[1][b[normalize-space(text())='Savings Balance']]]/td[2]]"
+    }
+  ],
+  "screenshotPath": "C:\\Users\\brayd\\Documents\\Projects\\interface.ai-project\\evidence\\bank.member.savings-lookup.2026-08-25T05-30-17-053Z\\screenshot.png"
+}

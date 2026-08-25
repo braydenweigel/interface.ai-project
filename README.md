@@ -77,6 +77,33 @@ Every run writes its own `evidence/<runId>/` folder containing `result.json`
 whatever the outcome — redacting anything the artifact marks `sensitive`
 (here: `username`/`password`).
 
+`run()` in `run.ts` is also directly callable from TypeScript — it takes
+the artifact path and a plain params object (not an argv array), coerces
+each value against the artifact's declared parameter types, and returns an
+exit code instead of calling `process.exit()`, so it's safe to call
+repeatedly in one process:
+
+```ts
+import { run } from './src/replay/run';
+
+await run('artifacts/test/member-savings-lookup.json', {
+  memberId: '1001',
+  username: 'demo.operator',
+  password: 'demo123'
+});
+```
+
+For interactive/ad-hoc use from the terminal, `repl.ts` wraps this in a
+loop — each line is parsed into `(artifactPath, params)` and passed
+straight to `run()`:
+
+```bash
+npm run replay:repl
+replay> artifacts/test/member-savings-lookup.json memberId=1001 username=demo.operator password=demo123
+replay> artifacts/test/member-savings-lookup.json memberId=99999 username=demo.operator password=demo123
+replay> exit
+```
+
 Run the automated test suite (schema validation + live-browser replay against
 a locally spawned `target-app`):
 
