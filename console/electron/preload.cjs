@@ -18,5 +18,14 @@ contextBridge.exposeInMainWorld('replayApi', {
    * @returns {Promise<unknown>} the RunOutcome from src/replay/run.ts
    */
   runArtifact: (artifactPath, params) =>
-    ipcRenderer.invoke('run-artifact', artifactPath, params)
+    ipcRenderer.invoke('run-artifact', artifactPath, params),
+
+  /** @returns {Promise<Array<unknown>>} EvidenceRunSummary[] -- see build-specs/console/2_LOG_TAB_SPEC.md §2. */
+  listEvidenceRuns: () => ipcRenderer.invoke('list-evidence-runs'),
+
+  /**
+   * @param {string} runDir
+   * @returns {Promise<unknown>} EvidenceRunDetail
+   */
+  getEvidenceRun: (runDir) => ipcRenderer.invoke('get-evidence-run', runDir)
 });

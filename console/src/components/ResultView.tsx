@@ -1,10 +1,11 @@
-import { AlertCircle, CheckCircle2, Info, RotateCcw, Undo2 } from 'lucide-react';
+import { RotateCcw, Undo2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import type { CapabilityArtifact, RunOutcome } from '@/lib/api';
+import type { CapabilityArtifact, ReplayLogEntry, ReplayResult } from '@/lib/api';
+import { statusMeta } from '@/lib/status';
 import { formatCapabilityId } from '@/lib/utils';
 
 const REDACTED_DISPLAY = '••••••••';
@@ -15,48 +16,35 @@ function formatValue(value: unknown): string {
   return String(value);
 }
 
-interface StatusMeta {
-  label: string;
-  icon: typeof CheckCircle2;
-  badgeClassName: string;
-  panelClassName: string;
-}
-
-function statusMeta(status: RunOutcome['result']['status']): StatusMeta {
-  switch (status) {
-    case 'success':
-      return {
-        label: 'Success',
-        icon: CheckCircle2,
-        badgeClassName: 'bg-success text-success-foreground border-transparent',
-        panelClassName: 'border-success/40 bg-success/10'
-      };
-    case 'business_outcome':
-      return {
-        label: 'Business outcome',
-        icon: Info,
-        badgeClassName: 'bg-blue-500 text-white border-transparent dark:bg-blue-600',
-        panelClassName: 'border-blue-500/40 bg-blue-500/10'
-      };
-    case 'failure':
-      return {
-        label: 'Failure',
-        icon: AlertCircle,
-        badgeClassName: '',
-        panelClassName: 'border-destructive/40 bg-destructive/10'
-      };
-  }
-}
-
 interface ResultViewProps {
-  artifact: CapabilityArtifact;
-  outcome: RunOutcome;
-  onRunAgain: () => void;
-  onChooseDifferent: () => void;
+  capabilityId: string;
+  /** null when viewing a historical run whose artifact file has since been
+   * moved/edited/deleted -- expected, not an error. Falls back to unlabeled
+   * key/value output display (build-specs/console/2_LOG_TAB_SPEC.md §5). */
+  artifact: CapabilityArtifact | null;
+  result: ReplayResult;
+  log: ReplayLogEntry[];
+  screenshotDataUrl?: string;
+  /** 'live' = just-run result on the Run tab (Run again / Choose different
+   * artifact). 'history' = a past run opened from the Log tab (Back to
+   * log only -- "run again" doesn't make sense for a historical record). */
+  mode: 'live' | 'history';
+  onRunAgain?: () => void;
+  onChooseDifferent?: () => void;
+  onBack?: () => void;
 }
 
-export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }: ResultViewProps) {
-  const { result, log, screenshotDataUrl } = outcome;
+export function ResultView({
+  capabilityId,
+  artifact,
+  result,
+  log,
+  screenshotDataUrl,
+  mode,
+  onRunAgain,
+  onChooseDifferent,
+  onBack
+}: ResultViewProps) {
   const meta = statusMeta(result.status);
   const Icon = meta.icon;
 
@@ -65,14 +53,14 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
       <div>
         <button
           type="button"
-          onClick={onChooseDifferent}
+          onClick={mode === 'live' ? onChooseDifferent : onBack}
           className="text-muted-foreground hover:text-foreground mb-3 flex items-center gap-1 text-sm"
         >
           <Undo2 className="size-3.5" />
-          Back
+          {mode === 'live' ? 'Back' : 'Back to log'}
         </button>
-        <h2 className="text-base font-semibold">{formatCapabilityId(artifact.capabilityId)}</h2>
-        <p className="text-muted-foreground font-mono text-xs">{artifact.capabilityId}</p>
+        <h2 className="text-base font-semibold">{formatCapabilityId(capabilityId)}</h2>
+        <p className="text-muted-foreground font-mono text-xs">{capabilityId}</p>
       </div>
 
       {/* result.status, rendered distinctly per state -- this three-way
@@ -96,7 +84,7 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
         <OutputsList
           title="Outputs"
           entries={Object.entries(result.outputs)}
-          specs={artifact.outputs}
+          specs={artifact?.outputs ?? []}
         />
       )}
 
@@ -104,7 +92,7 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
         <OutputsList
           title="Outputs"
           entries={Object.entries(result.outputs)}
-          specs={artifact.businessOutcomes.find((bo) => bo.name === result.outcome)?.outputs ?? []}
+          specs={artifact?.businessOutcomes.find((bo) => bo.name === result.outcome)?.outputs ?? []}
         />
       )}
 
@@ -147,13 +135,22 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
       </details>
 
       <div className="flex gap-3">
-        <Button onClick={onRunAgain}>
-          <RotateCcw className="size-4" />
-          Run again
-        </Button>
-        <Button variant="outline" onClick={onChooseDifferent}>
-          Choose different artifact
-        </Button>
+        {mode === 'live' ? (
+          <>
+            <Button onClick={onRunAgain}>
+              <RotateCcw className="size-4" />
+              Run again
+            </Button>
+            <Button variant="outline" onClick={onChooseDifferent}>
+              Choose different artifact
+            </Button>
+          </>
+        ) : (
+          <Button variant="outline" onClick={onBack}>
+            <Undo2 className="size-4" />
+            Back to log
+          </Button>
+        )}
       </div>
     </div>
   );

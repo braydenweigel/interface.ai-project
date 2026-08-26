@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { ArtifactPicker } from '@/components/ArtifactPicker';
+import { EvidenceDetail } from '@/components/EvidenceDetail';
+import { EvidenceList } from '@/components/EvidenceList';
 import { ParameterForm } from '@/components/ParameterForm';
 import { ResultView } from '@/components/ResultView';
-import { replayApi, type ArtifactListEntry, type RunOutcome } from '@/lib/api';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { replayApi, type ArtifactListEntry, type EvidenceRunSummary, type RunOutcome } from '@/lib/api';
 
 type Screen = 'picker' | 'form' | 'result';
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'run' | 'log'>('run');
+
   const [screen, setScreen] = useState<Screen>('picker');
   const [artifacts, setArtifacts] = useState<ArtifactListEntry[]>([]);
   const [loadingArtifacts, setLoadingArtifacts] = useState(true);
@@ -16,6 +21,11 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+
+  const [evidenceRuns, setEvidenceRuns] = useState<EvidenceRunSummary[]>([]);
+  const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [selectedRun, setSelectedRun] = useState<EvidenceRunSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +44,30 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  // Re-fetch every time the Log tab becomes active, not just once on first
+  // mount, so a run just completed on the Run tab shows up without
+  // restarting the app (build-specs/console/2_LOG_TAB_SPEC.md §3).
+  useEffect(() => {
+    if (activeTab !== 'log') return;
+    let cancelled = false;
+    setLoadingEvidence(true);
+    setEvidenceError(null);
+    replayApi
+      .listEvidenceRuns()
+      .then((entries) => {
+        if (!cancelled) setEvidenceRuns(entries);
+      })
+      .catch((err) => {
+        if (!cancelled) setEvidenceError(String(err));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEvidence(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
 
   function handleSelect(entry: ArtifactListEntry) {
     setSelected(entry);
@@ -80,33 +114,59 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8">
-        {screen === 'picker' && (
-          <ArtifactPicker
-            entries={artifacts}
-            loading={loadingArtifacts}
-            error={listError}
-            onSelect={handleSelect}
-          />
-        )}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'run' | 'log')}>
+          <TabsList>
+            <TabsTrigger value="run">Run</TabsTrigger>
+            <TabsTrigger value="log">Log</TabsTrigger>
+          </TabsList>
 
-        {screen === 'form' && selected?.data && (
-          <ParameterForm
-            artifact={selected.data}
-            running={running}
-            error={runError}
-            onBack={backToPicker}
-            onRun={handleRun}
-          />
-        )}
+          <TabsContent value="run" className="pt-6">
+            {screen === 'picker' && (
+              <ArtifactPicker
+                entries={artifacts}
+                loading={loadingArtifacts}
+                error={listError}
+                onSelect={handleSelect}
+              />
+            )}
 
-        {screen === 'result' && selected?.data && outcome && (
-          <ResultView
-            artifact={selected.data}
-            outcome={outcome}
-            onRunAgain={backToForm}
-            onChooseDifferent={backToPicker}
-          />
-        )}
+            {screen === 'form' && selected?.data && (
+              <ParameterForm
+                artifact={selected.data}
+                running={running}
+                error={runError}
+                onBack={backToPicker}
+                onRun={handleRun}
+              />
+            )}
+
+            {screen === 'result' && selected?.data && outcome && (
+              <ResultView
+                capabilityId={selected.data.capabilityId}
+                artifact={selected.data}
+                result={outcome.result}
+                log={outcome.log}
+                screenshotDataUrl={outcome.screenshotDataUrl}
+                mode="live"
+                onRunAgain={backToForm}
+                onChooseDifferent={backToPicker}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="log" className="pt-6">
+            {selectedRun ? (
+              <EvidenceDetail entry={selectedRun} onBack={() => setSelectedRun(null)} />
+            ) : (
+              <EvidenceList
+                entries={evidenceRuns}
+                loading={loadingEvidence}
+                error={evidenceError}
+                onSelect={setSelectedRun}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

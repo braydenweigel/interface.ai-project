@@ -14,6 +14,7 @@ import { run } from '../../src/replay/run';
 // console/electron/main.ts -> console/ -> repo root
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ARTIFACTS_DIR = path.join(REPO_ROOT, 'artifacts');
+const EVIDENCE_DIR = path.join(REPO_ROOT, 'evidence');
 const DEV_SERVER_URL = 'http://localhost:5173';
 
 function listArtifactFiles(dir: string): string[] {
@@ -69,6 +70,88 @@ function registerIpcHandlers(): void {
       return { ...outcome, screenshotDataUrl };
     }
   );
+
+  // Log tab (build-specs/console/2_LOG_TAB_SPEC.md §2): a cheap summary list
+  // over evidence/*/result.json -- the full record (log, outputs, artifact
+  // spec, screenshot) is only fetched per-run on selection, via
+  // get-evidence-run below, the same "list is cheap, detail is fetched on
+  // selection" pattern list-artifacts/run-artifact already use.
+  ipcMain.handle('list-evidence-runs', () => {
+    if (!fs.existsSync(EVIDENCE_DIR)) return [];
+    const summaries: Array<{
+      runId: string;
+      runDir: string;
+      capabilityId: string;
+      capabilityVersion: string;
+      status: string;
+      timestamp: number;
+      artifactPath: string;
+    }> = [];
+    for (const entry of fs.readdirSync(EVIDENCE_DIR, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const runDir = path.join(EVIDENCE_DIR, entry.name);
+      const resultPath = path.join(runDir, 'result.json');
+      try {
+        const record = JSON.parse(fs.readFileSync(resultPath, 'utf-8'));
+        // Sort key is the run directory's own mtime, not a substring parsed
+        // out of runId -- capabilityId itself contains dots
+        // ("bank.member.savings-lookup"), which makes splitting the
+        // "<capabilityId>.<timestamp>" runId back apart ambiguous. The
+        // filesystem already knows when the folder was written.
+        const { mtimeMs } = fs.statSync(runDir);
+        summaries.push({
+          runId: record.runId,
+          runDir,
+          capabilityId: record.capabilityId,
+          capabilityVersion: record.capabilityVersion,
+          status: record.result?.status,
+          timestamp: mtimeMs,
+          artifactPath: record.artifactPath
+        });
+      } catch (err) {
+        // A broken evidence record isn't actionable to an operator the way
+        // a broken artifact is -- they didn't author it -- so it's omitted
+        // from the list rather than surfaced as a row, per spec §2.
+        console.error(`skipping unreadable evidence record at ${resultPath}:`, (err as Error).message);
+      }
+    }
+    summaries.sort((a, b) => b.timestamp - a.timestamp);
+    return summaries;
+  });
+
+  ipcMain.handle('get-evidence-run', (_event, runDir: string) => {
+    const evidence = JSON.parse(fs.readFileSync(path.join(runDir, 'result.json'), 'utf-8'));
+
+    // artifactPath is recorded as given to run() -- absolute when the run
+    // came from this console (list-artifacts already returns absolute
+    // paths), but possibly repo-root-relative when the run came from the
+    // CLI. Resolve against REPO_ROOT rather than the main process's cwd,
+    // which may not be the repo root.
+    const artifactPath = path.isAbsolute(evidence.artifactPath)
+      ? evidence.artifactPath
+      : path.join(REPO_ROOT, evidence.artifactPath);
+
+    let artifact: unknown = null;
+    try {
+      artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf-8'));
+    } catch {
+      // Expected for anything but the newest runs -- the artifact file may
+      // have been edited or deleted since. The renderer falls back to
+      // unlabeled key/value output display in this case (spec §5).
+    }
+
+    let screenshotDataUrl: string | undefined;
+    if (evidence.screenshotPath) {
+      try {
+        const bytes = fs.readFileSync(evidence.screenshotPath);
+        screenshotDataUrl = `data:image/png;base64,${bytes.toString('base64')}`;
+      } catch {
+        // Leave screenshotDataUrl undefined; the renderer just won't show an image.
+      }
+    }
+
+    return { evidence, artifact, screenshotDataUrl };
+  });
 }
 
 function createWindow(): void {

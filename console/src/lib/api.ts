@@ -39,12 +39,44 @@ export interface ArtifactListEntry {
   parseError?: string;
 }
 
+/** One row of the Log tab's list -- cheap summary, no log/outputs/screenshot.
+ * See build-specs/console/2_LOG_TAB_SPEC.md §2. */
+export interface EvidenceRunSummary {
+  runId: string;
+  runDir: string;
+  capabilityId: string;
+  capabilityVersion: string;
+  status: ReplayResult['status'];
+  /** Run directory's filesystem mtime (ms) -- not parsed out of runId, see spec §2. */
+  timestamp: number;
+  artifactPath: string;
+}
+
+/** Full record for one run, fetched lazily when a Log tab row is opened. */
+export interface EvidenceRunDetail {
+  evidence: {
+    runId: string;
+    artifactPath: string;
+    capabilityId: string;
+    capabilityVersion: string;
+    params: Record<string, unknown>;
+    result: ReplayResult;
+    log: ReplayLogEntry[];
+    screenshotPath?: string;
+  };
+  /** null when the artifact file has since been moved/edited/deleted -- expected, not an error. */
+  artifact: CapabilityArtifact | null;
+  screenshotDataUrl?: string;
+}
+
 export interface ReplayApi {
   listArtifacts: () => Promise<ArtifactListEntry[]>;
   runArtifact: (
     artifactPath: string,
     params: Record<string, string | number | boolean>
   ) => Promise<RunOutcome>;
+  listEvidenceRuns: () => Promise<EvidenceRunSummary[]>;
+  getEvidenceRun: (runDir: string) => Promise<EvidenceRunDetail>;
 }
 
 declare global {
