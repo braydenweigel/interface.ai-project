@@ -15,7 +15,9 @@ the search→detail flow was chosen and why no mock-app changes were needed.
 - `src/types/capability-artifact.ts` — the artifact schema (TypeScript types).
 - `src/types/artifact-schema.zod.ts` — the runtime validator, including
   cross-field checks (dangling `{{param}}` refs, outputs never produced,
-  recoverable steps with no recovery hint, empty locator rationale).
+  recoverable steps with no recovery hint, empty locator rationale). See
+  [`docs/artifact-schema.md`](docs/artifact-schema.md) for the full
+  field-by-field writeup.
 - `src/replay/engine.ts` — the deterministic replay engine (locator
   fallback-chain resolution, recovery hints, business-outcome-before-
   checkpoint ordering, sensitive-field redaction).
