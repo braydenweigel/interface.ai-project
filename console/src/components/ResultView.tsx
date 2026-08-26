@@ -22,6 +22,12 @@ interface ResultViewProps {
    * moved/edited/deleted -- expected, not an error. Falls back to unlabeled
    * key/value output display (build-specs/console/2_LOG_TAB_SPEC.md §5). */
   artifact: CapabilityArtifact | null;
+  /** The parameters the run was invoked with. In live mode these are the
+   * raw values just submitted (sensitive ones redacted here against
+   * artifact.parameters); in history mode these come from the evidence
+   * record, where sensitive ones are already "[REDACTED]" strings written
+   * by run() at run time -- either way, the real value is never rendered. */
+  params: Record<string, unknown>;
   result: ReplayResult;
   log: ReplayLogEntry[];
   screenshotDataUrl?: string;
@@ -37,6 +43,7 @@ interface ResultViewProps {
 export function ResultView({
   capabilityId,
   artifact,
+  params,
   result,
   log,
   screenshotDataUrl,
@@ -80,8 +87,14 @@ export function ResultView({
         </CardContent>
       </Card>
 
+      <SpecList
+        title="Parameters"
+        entries={Object.entries(params)}
+        specs={artifact?.parameters ?? []}
+      />
+
       {result.status === 'success' && (
-        <OutputsList
+        <SpecList
           title="Outputs"
           entries={Object.entries(result.outputs)}
           specs={artifact?.outputs ?? []}
@@ -89,7 +102,7 @@ export function ResultView({
       )}
 
       {result.status === 'business_outcome' && (
-        <OutputsList
+        <SpecList
           title="Outputs"
           entries={Object.entries(result.outputs)}
           specs={artifact?.businessOutcomes.find((bo) => bo.name === result.outcome)?.outputs ?? []}
@@ -165,7 +178,7 @@ function FailureRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function OutputsList({
+function SpecList({
   title,
   entries,
   specs
@@ -183,7 +196,7 @@ function OutputsList({
           const spec = specs.find((s) => s.name === name);
           return (
             <div key={name} className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium">{spec?.description ?? name}</span>
+              <span className="text-sm font-medium">{spec?.name ?? name}</span>
               <span className="font-mono text-sm">
                 {spec?.sensitive ? REDACTED_DISPLAY : formatValue(value)}
               </span>

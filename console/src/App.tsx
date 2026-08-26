@@ -20,6 +20,7 @@ export default function App() {
   const [selected, setSelected] = useState<ArtifactListEntry | null>(null);
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
+  const [lastParams, setLastParams] = useState<Record<string, string | number | boolean>>({});
   const [runError, setRunError] = useState<string | null>(null);
 
   const [evidenceRuns, setEvidenceRuns] = useState<EvidenceRunSummary[]>([]);
@@ -83,6 +84,7 @@ export default function App() {
     try {
       const result = await replayApi.runArtifact(selected.path, params);
       setOutcome(result);
+      setLastParams(params);
       setScreen('result');
     } catch (err) {
       setRunError(String(err));
@@ -144,6 +146,7 @@ export default function App() {
               <ResultView
                 capabilityId={selected.data.capabilityId}
                 artifact={selected.data}
+                params={lastParams}
                 result={outcome.result}
                 log={outcome.log}
                 screenshotDataUrl={outcome.screenshotDataUrl}

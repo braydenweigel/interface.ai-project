@@ -83,6 +83,7 @@ export function EvidenceList({ entries, loading, error, onSelect }: EvidenceList
                 <p className="text-muted-foreground text-sm">
                   {new Date(entry.timestamp).toLocaleString()}
                 </p>
+                <p className="text-muted-foreground font-mono text-xs">{entry.capabilityId}</p>
                 <CardAction className="flex items-center gap-2">
                   <Badge
                     className={meta.badgeClassName || undefined}

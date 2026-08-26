@@ -66,6 +66,7 @@ export function EvidenceDetail({ entry, onBack }: EvidenceDetailProps) {
     <ResultView
       capabilityId={detail.artifact?.capabilityId ?? detail.evidence.capabilityId}
       artifact={detail.artifact}
+      params={detail.evidence.params}
       result={detail.evidence.result}
       log={detail.evidence.log}
       screenshotDataUrl={detail.screenshotDataUrl}
