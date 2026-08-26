@@ -1,10 +1,12 @@
 # interface.ai-project
 
-This repo currently implements `ARTIFACT_BUILD_SPEC.md`: the capability-artifact
-schema plus a minimal deterministic replay harness, proved out against the
-mock legacy bank app in `target-app/`. See `ASSIGNMENT.md` for the full
-project context this is scoped from, and `docs/step0-flow-notes.md` for why
-the search→detail flow was chosen and why no mock-app changes were needed.
+This repo currently implements `build-specs/ARTIFACT_BUILD_SPEC.md` (the
+capability-artifact schema plus a minimal deterministic replay harness,
+proved out against the mock legacy bank app in `target-app/`) and
+`build-specs/CONSOLE_BUILD_SPEC.md` (a desktop operator console in
+`console/` built on top of it). See `ASSIGNMENT.md` for the full project
+context this is scoped from, and `docs/step0-flow-notes.md` for why the
+search→detail flow was chosen and why no mock-app changes were needed.
 
 ## Layout
 
@@ -25,6 +27,10 @@ the search→detail flow was chosen and why no mock-app changes were needed.
 - `artifacts/test/member-savings-lookup.json` — the hand-authored test artifact.
 - `artifacts/test/broken/` — deliberately-invalid fixtures used to prove the
   validator's cross-field checks.
+- `console/` — a desktop operator console (Electron + React + shadcn/ui)
+  for picking an artifact, filling in its parameters, and running it — a
+  UI on top of `run()`, not a second implementation. See
+  [`console/README.md`](console/README.md).
 - `evidence/` — one folder per replay run (`evidence/<runId>/`), each
   containing `result.json` (result + step log) and `screenshot.png` —
   both written for every run regardless of outcome — including one run
