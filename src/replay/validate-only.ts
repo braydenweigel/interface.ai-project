@@ -1,5 +1,5 @@
 // CLI: schema-validate an artifact with no browser involved, for a fast
-// iteration loop while hand-authoring (ARTIFACT_BUILD_SPEC.md §5).
+// iteration loop while hand-authoring (build-specs/artifact/1_ARTIFACT_SPEC.md §5).
 //
 // Usage: tsx src/replay/validate-only.ts <artifact.json>
 

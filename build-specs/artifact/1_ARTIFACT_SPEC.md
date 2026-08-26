@@ -1,4 +1,4 @@
-# BUILD_SPEC.md — Artifact Schema + Test Harness
+# 1_ARTIFACT_SPEC.md — Artifact Schema + Test Harness
 
 ## 0. Scope
 

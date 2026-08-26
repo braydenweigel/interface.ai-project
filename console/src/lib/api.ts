@@ -1,9 +1,9 @@
 // Typed wrapper around the preload-exposed window.replayApi
-// (CONSOLE_BUILD_SPEC.md §2).
+// (build-specs/console/1_CONSOLE_SPEC.md §2).
 //
 // capability-artifact.ts has zero runtime dependencies (no Node imports,
 // just plain TS interfaces), so it's imported directly rather than
-// redeclared, per CONSOLE_BUILD_SPEC.md §1. run.ts/engine.ts, by
+// redeclared, per build-specs/console/1_CONSOLE_SPEC.md §1. run.ts/engine.ts, by
 // contrast, pull in fs/path/playwright/zod -- fine for the main process,
 // but not something the renderer's browser-only tsconfig should have to
 // type-check. The handful of result-shape types below are small and

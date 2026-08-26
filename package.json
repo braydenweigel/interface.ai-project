@@ -1,7 +1,7 @@
 {
   "name": "capability-artifact-system",
   "version": "0.1.0",
-  "description": "Capability-artifact schema + deterministic replay harness (ARTIFACT_BUILD_SPEC.md)",
+  "description": "Capability-artifact schema + deterministic replay harness (build-specs/artifact/1_ARTIFACT_SPEC.md)",
   "private": true,
   "type": "commonjs",
   "scripts": {

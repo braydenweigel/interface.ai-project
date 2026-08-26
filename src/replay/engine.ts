@@ -1,11 +1,11 @@
-// Deterministic replay engine (ARTIFACT_BUILD_SPEC.md §5).
+// Deterministic replay engine (build-specs/artifact/1_ARTIFACT_SPEC.md §5).
 //
 // Scope reminder: this is the minimal executor described in the spec, not
 // a production replay engine. No guardrail/allowlist enforcement, no
 // escalation/handoff -- a hard failure just returns a structured result
 // and stops. TODO(future phase): gate riskClass: "irreversible" steps
 // behind an approval/guardrail layer before executing them; out of scope
-// here per ARTIFACT_BUILD_SPEC.md §6.
+// here per build-specs/artifact/1_ARTIFACT_SPEC.md §6.
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';

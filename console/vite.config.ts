@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     fs: {
       // The renderer type-imports capability-artifact types straight from
-      // the repo root's src/ (see build-specs/CONSOLE_BUILD_SPEC.md §1)
+      // the repo root's src/ (see build-specs/console/1_CONSOLE_SPEC.md §1)
       // instead of redeclaring them.
       allow: [path.resolve(__dirname, '..'), path.resolve(__dirname, '.')],
     },

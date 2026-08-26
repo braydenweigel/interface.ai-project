@@ -1,13 +1,13 @@
 # Capability Console
 
-Desktop operator console for the replay system (`build-specs/CONSOLE_BUILD_SPEC.md`):
+Desktop operator console for the replay system (`build-specs/console/1_CONSOLE_SPEC.md`):
 pick an artifact, fill in a form generated from its declared parameters,
 run it, and see the structured result — success, business outcome, or
 failure — plus its screenshot and step log.
 
 Electron + React + TypeScript + shadcn/ui (Tailwind v4). The main process
 imports and calls `run()` from `../src/replay/run.ts` directly, in-process
-— see `electron/main.ts` and `build-specs/CONSOLE_BUILD_SPEC.md` §2 for
+— see `electron/main.ts` and `build-specs/console/1_CONSOLE_SPEC.md` §2 for
 why. The renderer never gets Node/Playwright access; it only talks to the
 main process through `window.replayApi`, exposed by `electron/preload.cjs`.
 
@@ -70,7 +70,7 @@ port on the renderer window (useful for connecting Playwright or
 ## Notes
 
 - Not packaged — `npm run dev` is the supported way to run this in the
-  current phase (see `build-specs/CONSOLE_BUILD_SPEC.md` §6 for what's
+  current phase (see `build-specs/console/1_CONSOLE_SPEC.md` §6 for what's
   explicitly out of scope: authoring UI, live per-step progress, guardrail
   enforcement, escalation UI, run history, packaging/signing).
 - `zod` here is pinned to match the repo root's exact version

@@ -1,10 +1,12 @@
 # interface.ai-project
 
-This repo currently implements `build-specs/ARTIFACT_BUILD_SPEC.md` (the
-capability-artifact schema plus a minimal deterministic replay harness,
-proved out against the mock legacy bank app in `target-app/`) and
-`build-specs/CONSOLE_BUILD_SPEC.md` (a desktop operator console in
-`console/` built on top of it). See `ASSIGNMENT.md` for the full project
+This repo currently implements `build-specs/artifact/1_ARTIFACT_SPEC.md`
+(the capability-artifact schema plus a minimal deterministic replay
+harness, proved out against the mock legacy bank app in `target-app/`)
+and `build-specs/console/1_CONSOLE_SPEC.md` (a desktop operator console
+in `console/` built on top of it — with `build-specs/console/2_LOG_TAB_SPEC.md`
+as the not-yet-built follow-on for browsing past `evidence/` runs). See
+`ASSIGNMENT.md` for the full project
 context this is scoped from, and `docs/step0-flow-notes.md` for why the
 search→detail flow was chosen and why no mock-app changes were needed.
 

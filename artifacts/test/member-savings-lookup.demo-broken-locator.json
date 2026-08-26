@@ -247,7 +247,7 @@
             "expression": "//td[normalize-space(text())='Definitely Not A Real Field']"
           }
         ],
-        "robustnessRationale": "DEMO ONLY: deliberately broken locator pointing at an element that does not exist in detail.ejs, to exercise the hard-failure acceptance path (ARTIFACT_BUILD_SPEC.md section 5, acceptance item 3)."
+        "robustnessRationale": "DEMO ONLY: deliberately broken locator pointing at an element that does not exist in detail.ejs, to exercise the hard-failure acceptance path (build-specs/artifact/1_ARTIFACT_SPEC.md section 5, acceptance item 3)."
       },
       "outputName": "savingsBalance",
       "timeoutMs": 5000,

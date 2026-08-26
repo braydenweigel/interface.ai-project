@@ -77,7 +77,7 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
 
       {/* result.status, rendered distinctly per state -- this three-way
           distinction is the entire point of the artifact schema
-          (CONSOLE_BUILD_SPEC.md §5). */}
+          (build-specs/console/1_CONSOLE_SPEC.md §5). */}
       <Card className={meta.panelClassName}>
         <CardContent className="flex items-center gap-3">
           <Icon className="size-6 shrink-0" />

@@ -1,6 +1,6 @@
 // Integration test: drives a real Playwright browser against a real
 // (locally spawned) instance of target-app. Exercises the three result
-// shapes required by ARTIFACT_BUILD_SPEC.md §5's acceptance criteria.
+// shapes required by build-specs/artifact/1_ARTIFACT_SPEC.md §5's acceptance criteria.
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';

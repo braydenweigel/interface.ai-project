@@ -1,5 +1,5 @@
 // Preload script — the only bridge between the sandboxed renderer and the
-// main process's Node/Playwright access (CONSOLE_BUILD_SPEC.md §2). The
+// main process's Node/Playwright access (build-specs/console/1_CONSOLE_SPEC.md §2). The
 // renderer never gets nodeIntegration; it only ever sees the narrow API
 // exposed here via contextBridge.
 //

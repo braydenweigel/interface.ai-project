@@ -1,5 +1,5 @@
 // Capability-artifact schema — TypeScript types.
-// See ARTIFACT_BUILD_SPEC.md §2 and docs/step0-flow-notes.md for the
+// See build-specs/artifact/1_ARTIFACT_SPEC.md §2 and docs/step0-flow-notes.md for the
 // design rationale. src/types/artifact-schema.zod.ts is the runtime
 // mirror of everything in this file.
 

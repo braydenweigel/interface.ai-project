@@ -1,4 +1,4 @@
-// Electron main process (CONSOLE_BUILD_SPEC.md §2).
+// Electron main process (build-specs/console/1_CONSOLE_SPEC.md §2).
 //
 // This is a real Node.js runtime, unlike a Tauri/Rust backend: it imports
 // run() from the existing replay system directly and calls it in-process

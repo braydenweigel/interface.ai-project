@@ -1,5 +1,5 @@
 // CLI + programmatic entry point for replaying an artifact
-// (ARTIFACT_BUILD_SPEC.md §5).
+// (build-specs/artifact/1_ARTIFACT_SPEC.md §5).
 //
 // Validates the artifact, replays it against a live browser with the
 // given params, prints the structured result, and writes evidence to its

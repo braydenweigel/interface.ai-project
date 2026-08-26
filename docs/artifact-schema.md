@@ -5,7 +5,7 @@ This documents the artifact format defined in
 (TypeScript types — the source of truth for shape) and
 [`src/types/artifact-schema.zod.ts`](../src/types/artifact-schema.zod.ts)
 (the runtime validator, including checks the type system alone can't
-express). See `ARTIFACT_BUILD_SPEC.md` §2 for the original spec this
+express). See `build-specs/artifact/1_ARTIFACT_SPEC.md` §2 for the original spec this
 implements, and [`step0-flow-notes.md`](step0-flow-notes.md) for why the
 one hand-authored artifact in this repo looks the way it does.
 
@@ -81,7 +81,7 @@ sibling `<td>`'s input" because the field has no label, id, or
 distinguishing accessible name at all).
 
 `robustnessRationale` is not decorative. The validator rejects anything
-under 15 characters, and — per `ARTIFACT_BUILD_SPEC.md` — a rationale that
+under 15 characters, and — per `build-specs/artifact/1_ARTIFACT_SPEC.md` — a rationale that
 doesn't reference the actual markup it's targeting is a reviewer-visible
 smell even though the schema can't mechanically detect that. Write it as
 "why this ordering, given what's actually on the page," not "css
@@ -224,7 +224,7 @@ throwing. `BusinessOutcome` is a **first-class sibling** of `Checkpoint`,
 not an exception path: a named, expected *non-success* terminal state
 (e.g. `"member_not_found"` when a search legitimately turns up nothing).
 Conflating the two — treating "no such member" as a failure instead of a
-real answer — is, per `ARTIFACT_BUILD_SPEC.md`, the most common design
+real answer — is, per `build-specs/artifact/1_ARTIFACT_SPEC.md`, the most common design
 mistake here.
 
 The engine reflects this in its control flow (`replay()` in
@@ -255,7 +255,7 @@ interface Provenance {
 ```
 
 `riskClass` is metadata for a guardrail layer this deliverable doesn't
-build (see `ARTIFACT_BUILD_SPEC.md` §6 — out of scope here, stubbed as a
+build (see `build-specs/artifact/1_ARTIFACT_SPEC.md` §6 — out of scope here, stubbed as a
 TODO in `engine.ts`). The hand-authored artifact is `"safe"` (a read-only
 lookup); an artifact that creates a real record (e.g. the mock app's
 sub-account creation flow) would be `"irreversible"` and, in a later

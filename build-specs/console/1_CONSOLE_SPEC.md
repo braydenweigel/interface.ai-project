@@ -1,9 +1,9 @@
-# BUILD_SPEC.md — Desktop Console (Electron + React + shadcn)
+# 1_CONSOLE_SPEC.md — Desktop Console (Electron + React + shadcn)
 
 ## 0. Scope
 
 Build a desktop app that is a thin operator console over the replay system
-already built in `build-specs/ARTIFACT_BUILD_SPEC.md` (`src/replay/*`,
+already built in `build-specs/artifact/1_ARTIFACT_SPEC.md` (`src/replay/*`,
 `src/types/*`, `artifacts/`, `evidence/`). Three flows, one continuous
 screen:
 

@@ -52,7 +52,7 @@ export function ParameterForm({ artifact, running, error, onBack, onRun }: Param
 
     // Omit blank optional string/number/date fields rather than sending
     // "" -- matches run()'s own params: Record<string, ...> = {}
-    // default-omission behavior (CONSOLE_BUILD_SPEC.md §4).
+    // default-omission behavior (build-specs/console/1_CONSOLE_SPEC.md §4).
     const params: Record<string, string | number | boolean> = {};
     for (const spec of artifact.parameters) {
       const value = values[spec.name];
