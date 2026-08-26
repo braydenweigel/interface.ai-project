@@ -2,6 +2,7 @@ import { AlertTriangle, ChevronRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card';
 import type { ArtifactListEntry, RiskClass } from '@/lib/api';
+import { formatCapabilityId } from '@/lib/utils';
 
 function riskBadgeVariant(riskClass: RiskClass): 'secondary' | 'warning' | 'destructive' {
   if (riskClass === 'irreversible') return 'destructive';
@@ -61,10 +62,11 @@ export function ArtifactPicker({ entries, loading, error, onSelect }: ArtifactPi
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {entry.data!.capabilityId}
+              {formatCapabilityId(entry.data!.capabilityId)}
               <span className="text-muted-foreground font-normal">v{entry.data!.version}</span>
             </CardTitle>
             <CardDescription>{entry.data!.description}</CardDescription>
+            <p className="text-muted-foreground font-mono text-xs">{entry.data!.capabilityId}</p>
             <CardAction className="flex items-center gap-2">
               <Badge variant={riskBadgeVariant(entry.data!.riskClass)}>{entry.data!.riskClass}</Badge>
               <ChevronRight className="text-muted-foreground size-4" />

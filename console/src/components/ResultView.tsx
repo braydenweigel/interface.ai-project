@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { CapabilityArtifact, RunOutcome } from '@/lib/api';
+import { formatCapabilityId } from '@/lib/utils';
 
 const REDACTED_DISPLAY = '••••••••';
 
@@ -68,9 +69,10 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
           className="text-muted-foreground hover:text-foreground mb-3 flex items-center gap-1 text-sm"
         >
           <Undo2 className="size-3.5" />
-          Choose a different artifact
+          Back
         </button>
-        <h2 className="text-base font-semibold">{artifact.capabilityId}</h2>
+        <h2 className="text-base font-semibold">{formatCapabilityId(artifact.capabilityId)}</h2>
+        <p className="text-muted-foreground font-mono text-xs">{artifact.capabilityId}</p>
       </div>
 
       {/* result.status, rendered distinctly per state -- this three-way
@@ -133,7 +135,7 @@ export function ResultView({ artifact, outcome, onRunAgain, onChooseDifferent }:
         </summary>
         <Separator />
         <ScrollArea className="max-h-64">
-          <div className="flex flex-col gap-2 px-4 py-3 font-mono text-xs">
+          <div className="flex flex-col gap-2 px-4 py-1 font-mono text-xs">
             {log.map((entry, i) => (
               <div key={i} className="flex gap-2">
                 <span className="text-muted-foreground shrink-0">{entry.stepId}</span>
