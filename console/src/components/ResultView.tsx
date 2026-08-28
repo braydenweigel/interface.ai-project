@@ -135,7 +135,7 @@ export function ResultView({
           Step log ({log.length})
         </summary>
         <Separator />
-        <ScrollArea className="max-h-64">
+        <ScrollArea className="h-64">
           <div className="flex flex-col gap-2 px-4 py-1 font-mono text-xs">
             {log.map((entry, i) => (
               <div key={i} className="flex gap-2">

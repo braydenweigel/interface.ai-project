@@ -269,6 +269,38 @@
           "sensitive": false
         }
       ]
+    },
+    {
+      "name": "access_restricted",
+      "description": "The member exists but their status is Restricted -- back-office operators are not permitted to view restricted members. A real, expected business outcome, not a crash.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the step-level frame chains above -- the permission-denied message renders inside the same iframe the detail page would have."
+        }
+      ],
+      "detector": {
+        "strategies": [
+          { "kind": "text", "text": "You do not have permission to view this member." },
+          {
+            "kind": "xpath",
+            "expression": "//p[normalize-space(text())='You do not have permission to view this member.']"
+          }
+        ],
+        "robustnessRationale": "detail.ejs renders exactly this literal string in a <p class=\"error-text\"> when permissionDenied is true. Text match is preferred as the primary strategy since it's exactly what a human operator would read; the xpath fallback pins it to the specific paragraph in case surrounding copy elsewhere on the page ever changes."
+      },
+      "expectation": { "kind": "textContains", "text": "You do not have permission to view this member" },
+      "outputs": [
+        {
+          "name": "message",
+          "type": "string",
+          "description": "The literal permission-denied message shown to the operator.",
+          "sensitive": false
+        }
+      ]
     }
   ],
   "riskClass": "safe",

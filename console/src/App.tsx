@@ -163,6 +163,7 @@ export default function App() {
             ) : (
               <EvidenceList
                 entries={evidenceRuns}
+                artifacts={artifacts}
                 loading={loadingEvidence}
                 error={evidenceError}
                 onSelect={setSelectedRun}
