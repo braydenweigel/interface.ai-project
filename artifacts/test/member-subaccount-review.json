@@ -1,0 +1,563 @@
+{
+  "schemaVersion": "1.0.0",
+  "capabilityId": "bank.member.subaccount.review",
+  "version": 1,
+  "description": "Find a member by exact Member ID, fill in a new sub-account form with a given account type and initial deposit, and reach the Review New Sub-Account page. Deliberately stops there and takes no action -- it never clicks 'Confirm Creation', so no account record is actually created. riskClass: safe.",
+  "target": {
+    "appId": "mock-legacy-bank-app",
+    "baseUrl": "http://localhost:4000",
+    "entryPath": "/login"
+  },
+  "parameters": [
+    {
+      "name": "memberId",
+      "type": "string",
+      "required": true,
+      "description": "Exact Member ID to open the sub-account for (e.g. \"1001\"). This capability does not disambiguate multiple last-name matches.",
+      "sensitive": false
+    },
+    {
+      "name": "deposit",
+      "type": "currency",
+      "required": true,
+      "description": "Initial deposit for the new sub-account. Must be a positive amount.",
+      "sensitive": false
+    },
+    {
+      "name": "accountType",
+      "type": "string",
+      "required": true,
+      "description": "Type of sub-account to open. Must be exactly one of the target app's actual account types -- values outside this set fail before any browser action runs.",
+      "sensitive": false,
+      "allowedValues": ["Savings", "Checking", "CD"]
+    },
+    {
+      "name": "slow",
+      "type": "boolean",
+      "required": false,
+      "description": "When true, appends the app's real ?slow=true testing hook to the initial login navigation, adding a genuine 2-4s server delay. Exercises the recoverable wait/retry path deterministically.",
+      "sensitive": false
+    },
+    {
+      "name": "username",
+      "type": "string",
+      "required": true,
+      "description": "Back-office operator username. The mock app accepts any value, but a real target would require a real credential here.",
+      "sensitive": true
+    },
+    {
+      "name": "password",
+      "type": "string",
+      "required": true,
+      "description": "Back-office operator password.",
+      "sensitive": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "reviewedAccountType",
+      "type": "string",
+      "description": "The account type shown back on the Review New Sub-Account page -- confirms the review step reflects the requested accountType parameter.",
+      "sensitive": false
+    },
+    {
+      "name": "reviewedDeposit",
+      "type": "currency",
+      "description": "The initial deposit amount echoed back on the Review New Sub-Account page -- confirms the review step captured the entered amount correctly, before any decision to actually create the account.",
+      "sensitive": false
+    }
+  ],
+  "steps": [
+    {
+      "id": "navigate_login",
+      "action": "navigate",
+      "description": "Go to the top-level login page.",
+      "value": "{{baseUrl}}/login?slow={{slow}}",
+      "timeoutMs": 1500,
+      "onFailure": "recoverable",
+      "recoveryHints": [
+        {
+          "name": "retry_with_longer_wait",
+          "detector": "navigation did not complete within the short 1500ms probe window",
+          "action": "retryWithExtendedTimeout",
+          "maxAttempts": 1,
+          "extendedTimeoutMs": 6000,
+          "note": "the app's ?slow=true hook adds a genuine, bounded 2-4s server delay; a 6000ms retry timeout comfortably covers the worst case, so this always resolves deterministically rather than flaking."
+        }
+      ]
+    },
+    {
+      "id": "fill_username",
+      "action": "fill",
+      "description": "Type the operator username into the login form's first field.",
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//td[normalize-space(text())='Username:']/following-sibling::td[1]/input"
+          }
+        ],
+        "robustnessRationale": "login.ejs has no <label for>, id, or name that identifies this field semantically (the input's own name attribute is the opaque 'u'). The only stable signal is the table layout itself: a <td> containing the literal text 'Username:' immediately followed by a sibling <td> holding the input. There's no second, equally valid strategy here because there's genuinely nothing else on the page to anchor to (role+name resolves to an unnamed textbox shared with the password field, since neither has an accessible name) -- the positional xpath is the only reliable signal, which is itself the point of this fixture."
+      },
+      "value": "{{username}}",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "fill_password",
+      "action": "fill",
+      "description": "Type the operator password into the login form's second field.",
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//td[normalize-space(text())='Password:']/following-sibling::td[1]/input"
+          }
+        ],
+        "robustnessRationale": "Same reasoning as fill_username: no label/id/name to anchor to, so the field is identified by the adjacent 'Password:' table cell. A role-based locator (role=textbox) would match this AND the username field, since <input type=password> has no distinguishing accessible name either -- the structural xpath is the only strategy that resolves uniquely."
+      },
+      "value": "{{password}}",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "click_login_submit",
+      "action": "click",
+      "description": "Submit the login form.",
+      "locator": {
+        "strategies": [
+          { "kind": "role", "role": "button", "name": "Log In", "exact": true },
+          { "kind": "css", "selector": "input[type=submit]" }
+        ],
+        "robustnessRationale": "This is a real <input type=submit value=\"Log In\"> -- unlike the text fields, submit inputs DO get a real accessible name from their value attribute, so role+name is genuinely reliable here and is preferred over css. The css fallback (there's exactly one submit input on this page) only matters if a future app revision changes the button's visible label."
+      },
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "fill_search_query",
+      "action": "fill",
+      "description": "Type the member ID into the search box inside the dashboard's main content iframe.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "dashboard.ejs's main content iframe deliberately has no name or id -- BUILD-SPEC.md requires it be identifiable only by position: 'the only iframe directly under the second <table><tr><td>'. Both strategies encode exactly that structural rule; xpath is listed first because it reads closer to the spec's own wording (second table, then the iframe descendant) and is less likely to silently match an unintended element if a future revision adds another table before the nav table, whereas the css nth-of-type fallback is kept for engines/tooling that resolve css faster than xpath."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//td[normalize-space(text())='Member ID or Last Name:']/following-sibling::td[1]/input"
+          }
+        ],
+        "robustnessRationale": "search.ejs explicitly avoids <label for> by design (BUILD-SPEC.md: 'no labels via <label for> -- use visible adjacent text instead'), so there is no label-based strategy available at all. The input's name attribute ('q') is intentionally non-semantic. The only strategy that survives is the same table-adjacency pattern used for the login fields."
+      },
+      "value": "{{memberId}}",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "click_search_submit",
+      "action": "click",
+      "description": "Submit the member search form.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as fill_search_query -- repeated per step because each step independently re-resolves its frame chain (the iframe is re-fetched fresh, not cached, since its own internal document changes across the flow)."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          { "kind": "role", "role": "button", "name": "Search", "exact": true },
+          { "kind": "css", "selector": "input[type=submit]" }
+        ],
+        "robustnessRationale": "Real <input type=submit value=\"Search\">, so role+name is reliable (accessible name comes from the value attribute, same reasoning as click_login_submit). css input[type=submit] is a valid fallback on this specific page because the search form is the only form present before a search has been run."
+      },
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "click_member_row",
+      "action": "click",
+      "description": "Click the result row whose first cell equals the searched member ID -- this is a row-relative button-in-a-form, not a plain <a href>.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//tr[td[1][normalize-space(.)='{{memberId}}']]//button"
+          }
+        ],
+        "robustnessRationale": "search.ejs deliberately renders each member ID as a <button type=submit> inside a tiny per-row <form>, not an <a href>, specifically so the target member id isn't visible in a plain href (BUILD-SPEC.md). BUILD-SPEC.md's own suggested locator strategy is 'the button in the row whose first cell equals {memberId}' -- this xpath is exactly that: find the <tr> whose first <td> equals the templated member id, then its descendant <button>. normalize-space(.) (the td's full string-value) is used rather than normalize-space(text()) because the id text is inside the nested <button>, not a direct text child of the <td>. This is the only viable strategy on this page; role+name would match the button's own visible text (the id), but role alone can't disambiguate rows without the same row-relative predicate, so xpath is used directly rather than pretending a simpler strategy is equally robust."
+      },
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "click_new_subaccount_button",
+      "action": "click",
+      "description": "Inside the detail page, click the 'New Sub-Account' button, which lives in a second iframe nested inside the main content iframe.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps -- the detail page itself renders inside this iframe, same as extract_savings_balance's checkpoint in the sibling savings-lookup capability."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "detail.ejs's success branch renders exactly one iframe (the Sub-Accounts panel: '<div><h3>Sub-Accounts</h3><iframe src=\".../subaccounts\">...'), with no id/name/class either -- but since it's the only iframe anywhere in detail.ejs's markup, a bare css 'iframe' selector resolves uniquely without needing a structural predicate. This same iframe element persists (its src is reloaded, but the element itself is not replaced) across every subsequent step in this capability -- listing, new, review, and confirm are all the same iframe's document being replaced in place by same-frame form submissions, none of which declare a target attribute."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          { "kind": "role", "role": "button", "name": "New Sub-Account", "exact": true }
+        ],
+        "robustnessRationale": "subaccounts.ejs renders a real <button type=\"submit\">New Sub-Account</button> -- a genuine accessible name from its own text content, so role+name is reliable and unique (this button only renders at all when the member's status isn't 'Closed'; see the account_closed business outcome below for what happens when it's absent)."
+      },
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "select_account_type",
+      "action": "select",
+      "description": "Select the requested account type in the New Sub-Account form's dropdown.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as click_new_subaccount_button -- clicking that button replaced this same iframe's document with subaccount-new.ejs via a same-frame form submission, so the frame chain to reach it is unchanged."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//td[normalize-space(text())='Account Type:']/following-sibling::td[1]/select"
+          }
+        ],
+        "robustnessRationale": "subaccount-new.ejs's <select name=\"type\"> has no label/id to anchor to (name='type' is non-semantic and not exposed as an accessible name), so it's identified by the adjacent 'Account Type:' table cell -- the same table-adjacency pattern used throughout this app's forms. The <option>s' own value attributes ('Savings'/'Checking'/'CD') are exactly the accountType parameter's allowedValues, so {{accountType}} always names a real option."
+      },
+      "value": "{{accountType}}",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "fill_deposit",
+      "action": "fill",
+      "description": "Type the initial deposit amount into the New Sub-Account form.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as click_new_subaccount_button -- clicking that button replaced this same iframe's document with subaccount-new.ejs via a same-frame form submission, so the frame chain to reach it is unchanged."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//td[normalize-space(text())='Initial Deposit:']/following-sibling::td[1]/input"
+          }
+        ],
+        "robustnessRationale": "subaccount-new.ejs has no label/id/name to anchor to (name='deposit' is non-semantic and not exposed as an accessible name), so the field is identified by the adjacent 'Initial Deposit:' table cell -- the same table-adjacency pattern used throughout this app's forms."
+      },
+      "value": "{{deposit}}",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "check_confirm_checkbox",
+      "action": "click",
+      "description": "Check the 'I confirm I want to open this sub-account' checkbox -- required before the form will submit.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as fill_deposit."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//td[normalize-space(text())='Confirm:']/following-sibling::td[1]/input"
+          }
+        ],
+        "robustnessRationale": "The checkbox has no id/name-based label -- its only association is the adjacent 'Confirm:' cell (the confirmation sentence after it, 'I confirm I want to open this sub-account', is plain sibling text inside the same <td>, not a <label for>). Same table-adjacency pattern as fill_deposit; 'click' toggles the checkbox on since it starts unchecked."
+      },
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "click_review_submit",
+      "action": "click",
+      "description": "Submit the New Sub-Account form to advance to the review step.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as fill_deposit."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          { "kind": "role", "role": "button", "name": "Review", "exact": true },
+          { "kind": "css", "selector": "input[type=submit]" }
+        ],
+        "robustnessRationale": "Real <input type=submit value=\"Review\">, so role+name is reliable (accessible name from the value attribute). css input[type=submit] is a valid fallback since it's the only submit control on this form."
+      },
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "extract_reviewed_account_type",
+      "action": "extract",
+      "description": "Read the Account Type echoed back on the Review New Sub-Account page. This is the last step -- no 'Confirm Creation' click follows, so no account record is ever created.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as fill_deposit -- subaccount-review.ejs is this same iframe's document, replaced in place by click_review_submit's form submission."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//tr[td[1][b[normalize-space(text())='Account Type']]]/td[2]"
+          }
+        ],
+        "robustnessRationale": "subaccount-review.ejs renders fields as <tr><td><b>Label</b></td><td>Value</td></tr> rows with no id/class, identical convention to detail.ejs -- the value is found by the same row-relative pattern used for extract_savings_balance in the sibling savings-lookup capability."
+      },
+      "outputName": "reviewedAccountType",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    },
+    {
+      "id": "extract_reviewed_deposit",
+      "action": "extract",
+      "description": "Read the Initial Deposit echoed back on the Review New Sub-Account page.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the earlier steps."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as fill_deposit."
+        }
+      ],
+      "locator": {
+        "strategies": [
+          {
+            "kind": "xpath",
+            "expression": "//tr[td[1][b[normalize-space(text())='Initial Deposit']]]/td[2]"
+          }
+        ],
+        "robustnessRationale": "Same row-relative convention as extract_reviewed_account_type -- 'Initial Deposit' is the row label used on the review page. This should equal the deposit parameter, confirming the review step reflects what was actually entered."
+      },
+      "outputName": "reviewedDeposit",
+      "timeoutMs": 5000,
+      "onFailure": "hard"
+    }
+  ],
+  "checkpoint": {
+    "description": "The nested Sub-Accounts iframe shows the 'Review New Sub-Account' page -- the flow stops here, one step before the irreversible create action.",
+    "frame": [
+      {
+        "strategies": [
+          { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+          { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+        ],
+        "robustnessRationale": "Same main-content-iframe rationale as the step-level frame chains above."
+      },
+      {
+        "strategies": [
+          { "kind": "css", "selector": "iframe" }
+        ],
+        "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as the step-level frame chains above."
+      }
+    ],
+    "locator": {
+      "strategies": [
+        { "kind": "text", "text": "Review New Sub-Account" },
+        { "kind": "xpath", "expression": "//h3[contains(normalize-space(text()), 'Review New Sub-Account')]" }
+      ],
+      "robustnessRationale": "The checkpoint re-checks the review page's own heading -- text-content match first (cheapest, what an operator would actually read), with a structural xpath pinned to the <h3> as a fallback in case similar wording appears elsewhere on a future revision of this page."
+    },
+    "expectation": { "kind": "textContains", "text": "Review New Sub-Account" }
+  },
+  "businessOutcomes": [
+    {
+      "name": "member_not_found",
+      "description": "The searched member ID has no matching record -- a real, expected business outcome, not a crash (BUILD-SPEC.md's canonical 'business outcome, not failure' case).",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the step-level frame chains above -- the not-found message renders inside the same iframe as the search results table would have."
+        }
+      ],
+      "detector": {
+        "strategies": [
+          { "kind": "text", "text": "No records found." },
+          {
+            "kind": "xpath",
+            "expression": "//td[contains(normalize-space(text()), 'No records found')]"
+          }
+        ],
+        "robustnessRationale": "search.ejs renders exactly this literal string in a single-cell row when results.length === 0, whether triggered by a genuine non-match or by ?fail=not_found. Text match is preferred as the primary strategy since it's exactly what a human operator would read; the xpath fallback pins it to the specific table cell in case the surrounding copy ever changes wording elsewhere on the page."
+      },
+      "expectation": { "kind": "textContains", "text": "No records found" },
+      "outputs": [
+        {
+          "name": "message",
+          "type": "string",
+          "description": "The literal not-found message shown to the operator.",
+          "sensitive": false
+        }
+      ]
+    },
+    {
+      "name": "access_restricted",
+      "description": "The member exists but their status is Restricted -- back-office operators are not permitted to view restricted members, so a sub-account can't be opened for them either. A real, expected business outcome, not a crash.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the step-level frame chains above -- the permission-denied message renders inside the same iframe the detail page would have."
+        }
+      ],
+      "detector": {
+        "strategies": [
+          { "kind": "text", "text": "You do not have permission to view this member." },
+          {
+            "kind": "xpath",
+            "expression": "//p[normalize-space(text())='You do not have permission to view this member.']"
+          }
+        ],
+        "robustnessRationale": "detail.ejs renders exactly this literal string in a <p class=\"error-text\"> when permissionDenied is true. Text match is preferred as the primary strategy since it's exactly what a human operator would read; the xpath fallback pins it to the specific paragraph in case surrounding copy elsewhere on the page ever changes."
+      },
+      "expectation": { "kind": "textContains", "text": "You do not have permission to view this member" },
+      "outputs": [
+        {
+          "name": "message",
+          "type": "string",
+          "description": "The literal permission-denied message shown to the operator.",
+          "sensitive": false
+        }
+      ]
+    },
+    {
+      "name": "account_closed",
+      "description": "The member exists and is viewable, but their account status is Closed -- new sub-accounts cannot be created for a closed member. A real, expected business outcome, not a crash: the 'New Sub-Account' button simply isn't rendered for a Closed member, so click_new_subaccount_button's own locator never resolves.",
+      "frame": [
+        {
+          "strategies": [
+            { "kind": "xpath", "expression": "(//table)[2]//iframe" },
+            { "kind": "css", "selector": "table:nth-of-type(2) iframe" }
+          ],
+          "robustnessRationale": "Same main-content-iframe rationale as the step-level frame chains above."
+        },
+        {
+          "strategies": [
+            { "kind": "css", "selector": "iframe" }
+          ],
+          "robustnessRationale": "Same nested-Sub-Accounts-iframe rationale as the step-level frame chains above -- unlike member_not_found/access_restricted, this outcome's message renders one level deeper, inside the Sub-Accounts panel iframe itself, since the member is viewable at all (just blocked from opening a new sub-account)."
+        }
+      ],
+      "detector": {
+        "strategies": [
+          { "kind": "text", "text": "This member's account is closed. New sub-accounts cannot be created." },
+          {
+            "kind": "xpath",
+            "expression": "//p[contains(normalize-space(text()), \"This member's account is closed\")]"
+          }
+        ],
+        "robustnessRationale": "subaccounts.ejs (and subaccount-new.ejs, defensively) render exactly this literal string in a <p class=\"error-text\"> instead of the 'New Sub-Account' button when member.status === 'Closed'. Text match first as the primary signal; xpath fallback pins it to the specific paragraph."
+      },
+      "expectation": { "kind": "textContains", "text": "This member's account is closed" },
+      "outputs": [
+        {
+          "name": "message",
+          "type": "string",
+          "description": "The literal closed-account message shown to the operator.",
+          "sensitive": false
+        }
+      ]
+    }
+  ],
+  "riskClass": "safe",
+  "provenance": {
+    "createdAt": "2026-08-30T00:00:00.000Z",
+    "createdBy": "hand-authored:claude"
+  }
+}

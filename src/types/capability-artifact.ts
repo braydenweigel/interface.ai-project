@@ -12,6 +12,14 @@ export interface ParamSpec {
   description: string;
   /** Redact this field's value from results and logs. */
   sensitive: boolean;
+  /**
+   * Closed set of values this parameter accepts, e.g. the exact option
+   * values of a target `<select>` (`select`-action steps commonly consume
+   * one of these via `{{paramName}}`). Compared against the parameter's
+   * stringified value -- present a value outside this set and run() fails
+   * before any browser action runs, not partway through a replay.
+   */
+  allowedValues?: string[];
 }
 
 export interface OutputSpec {
@@ -42,7 +50,7 @@ export interface LocatorSpec {
   robustnessRationale: string;
 }
 
-export type StepAction = 'navigate' | 'fill' | 'click' | 'waitFor' | 'extract';
+export type StepAction = 'navigate' | 'fill' | 'click' | 'select' | 'waitFor' | 'extract';
 export type FailureClass = 'hard' | 'recoverable';
 
 /**
@@ -73,10 +81,12 @@ export interface ArtifactStep {
    * one (see the mock app's main content iframe).
    */
   frame?: LocatorSpec[];
-  /** Required for fill / click / waitFor / extract. Absent for navigate. */
+  /** Required for fill / click / select / waitFor / extract. Absent for navigate. */
   locator?: LocatorSpec;
   /**
    * For `fill`: the value to type, may reference `{{paramName}}`.
+   * For `select`: the target `<option>`'s `value` attribute to select, may
+   * reference `{{paramName}}`.
    * For `navigate`: the URL to go to, may reference `{{baseUrl}}` and
    * `{{paramName}}`.
    */

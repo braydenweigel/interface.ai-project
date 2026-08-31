@@ -18,7 +18,8 @@ export const ParamSpecSchema = z.object({
   type: ParamTypeSchema,
   required: z.boolean(),
   description: z.string().min(1),
-  sensitive: z.boolean()
+  sensitive: z.boolean(),
+  allowedValues: z.array(z.string().min(1)).min(1).optional()
 });
 
 export const OutputSpecSchema = z.object({
@@ -74,7 +75,7 @@ export const LocatorSpecSchema = z.object({
     .min(15, 'robustnessRationale must be a specific, non-empty justification (>= 15 chars)')
 });
 
-export const StepActionSchema = z.enum(['navigate', 'fill', 'click', 'waitFor', 'extract']);
+export const StepActionSchema = z.enum(['navigate', 'fill', 'click', 'select', 'waitFor', 'extract']);
 export const FailureClassSchema = z.enum(['hard', 'recoverable']);
 
 export const RecoveryHintSchema = z.object({
@@ -119,6 +120,13 @@ export const ArtifactStepSchema = z
         code: z.ZodIssueCode.custom,
         path: ['value'],
         message: `step "${step.id}" has action "fill" but no value template`
+      });
+    }
+    if (step.action === 'select' && !step.value) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['value'],
+        message: `step "${step.id}" has action "select" but no value template naming the target option's value attribute`
       });
     }
     if (step.action === 'navigate' && !step.value) {

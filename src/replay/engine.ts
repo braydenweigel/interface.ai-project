@@ -72,7 +72,13 @@ class TemplateContext {
         }
         this.stringValues.set(spec.name, defaultForType(spec.type));
       } else {
-        this.stringValues.set(spec.name, stringifyForType(provided, spec.type));
+        const stringValue = stringifyForType(provided, spec.type);
+        if (spec.allowedValues && !spec.allowedValues.includes(stringValue)) {
+          throw new Error(
+            `parameter "${spec.name}" must be one of: ${spec.allowedValues.join(', ')} (got "${stringValue}")`
+          );
+        }
+        this.stringValues.set(spec.name, stringValue);
       }
     }
   }
@@ -295,6 +301,11 @@ async function executeStepOnce(
       await locator.click({ timeout: timeoutMs });
       return `clicked via [${matchedStrategy}]`;
     }
+    case 'select': {
+      const value = ctx.substitute(step.value ?? '');
+      await locator.selectOption(value, { timeout: timeoutMs });
+      return `selected via [${matchedStrategy}] option ${ctx.redactedPreview(step.value ?? '')}`;
+    }
     case 'waitFor': {
       return `visible via [${matchedStrategy}]`;
     }
@@ -487,7 +498,7 @@ export async function replay(artifact: CapabilityArtifact, rawParams: ReplayPara
     try {
       ctx = new TemplateContext(artifact, rawParams);
     } catch (err) {
-      result = { status: 'failure', stepId: '(params)', expected: 'all required parameters provided', observed: (err as Error).message };
+      result = { status: 'failure', stepId: '(params)', expected: 'all required parameters provided, with valid values', observed: (err as Error).message };
       return await finalize();
     }
 

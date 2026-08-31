@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import type { CapabilityArtifact, ParamSpec } from '@/lib/api';
 
@@ -94,6 +95,28 @@ export function ParameterForm({ artifact, running, error, onBack, onRun }: Param
                   {spec.required && <span className="text-destructive">*</span>}
                 </Label>
               </div>
+            ) : spec.allowedValues && spec.allowedValues.length > 0 ? (
+              <>
+                <Label htmlFor={spec.name}>
+                  {spec.name}
+                  {spec.required && <span className="text-destructive">*</span>}
+                </Label>
+                <Select
+                  value={typeof values[spec.name] === 'string' ? (values[spec.name] as string) : ''}
+                  onValueChange={(value) => setValue(spec.name, value)}
+                >
+                  <SelectTrigger id={spec.name}>
+                    <SelectValue placeholder={spec.required ? 'required' : 'optional'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {spec.allowedValues.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             ) : (
               <>
                 <Label htmlFor={spec.name}>

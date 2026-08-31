@@ -112,7 +112,8 @@ interface ParamSpec {
   type: ParamType;
   required: boolean;
   description: string;
-  sensitive: boolean;   // redact this value from results and logs
+  sensitive: boolean;         // redact this value from results and logs
+  allowedValues?: string[];   // closed set of accepted values, e.g. a target <select>'s option values
 }
 
 interface OutputSpec {
@@ -140,6 +141,14 @@ A field marked `sensitive: true` (parameter or output) is redacted as
 `evidence/<runId>/result.json`. See the hand-authored artifact's
 `username`/`password` parameters for the pattern.
 
+A parameter with `allowedValues` is checked against its stringified value
+before any browser action runs — a value outside the set fails immediately
+with a `(params)` step id naming the offending parameter and the accepted
+set, the same pre-flight failure path a missing required parameter already
+takes. This is how a `select`-action step's target `<option>`s get
+enforced as a real closed set rather than just documented in prose — see
+`member-subaccount-review.json`'s `accountType` parameter.
+
 Every declared `output` must actually be produced — the validator's
 `checkOutputsAreProduced` requires some step with `action: "extract"` and
 a matching `outputName`. There's no such requirement for
@@ -148,7 +157,7 @@ a matching `outputName`. There's no such requirement for
 ## Steps
 
 ```ts
-type StepAction = 'navigate' | 'fill' | 'click' | 'waitFor' | 'extract';
+type StepAction = 'navigate' | 'fill' | 'click' | 'select' | 'waitFor' | 'extract';
 type FailureClass = 'hard' | 'recoverable';
 
 interface ArtifactStep {
@@ -156,8 +165,8 @@ interface ArtifactStep {
   action: StepAction;
   description: string;
   frame?: LocatorSpec[];
-  locator?: LocatorSpec;      // required for fill/click/waitFor/extract
-  value?: string;             // required for fill (text to type) / navigate (URL)
+  locator?: LocatorSpec;      // required for fill/click/select/waitFor/extract
+  value?: string;             // required for fill (text to type) / select (target <option>'s value attribute) / navigate (URL)
   outputName?: string;        // required for extract
   timeoutMs: number;
   onFailure: FailureClass;
@@ -166,9 +175,9 @@ interface ArtifactStep {
 ```
 
 The zod schema enforces the action/field pairing above via `superRefine`
-(not just optional-field shape) — e.g. a `fill` step with no `value`, or
-an `extract` step with no `outputName`, fails validation with a message
-naming the offending step id.
+(not just optional-field shape) — e.g. a `fill` step with no `value`, a
+`select` step with no `value`, or an `extract` step with no `outputName`,
+fails validation with a message naming the offending step id.
 
 ### Recoverable steps
 
